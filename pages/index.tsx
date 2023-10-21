@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import type { NextPage } from "next";
 import { useMyVariable } from '../context/MyVariableContext';
-import OrgCard from '../components/OrgCard';
 import styles from '../styles/OrgCard.module.css';
 import { getIssues } from '../utils/getIssues';
 import axios from 'axios';
@@ -120,14 +119,6 @@ async function fetchSnetWorkspaces() {
   return (
     <div>
       <div className={styles.orgscontainer}>
-      {myVariable.orgInfo && myVariable.orgInfo.map((org: any) => (
-        <OrgCard 
-          key={org.org_id} 
-          orgName={org.org_name} 
-          logoUrl={org.logo_url} 
-          numberOfRepos={org.repos.length} 
-        />
-      ))}
       test
       </div>
     </div>
