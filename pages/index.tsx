@@ -120,7 +120,7 @@ async function fetchSnetWorkspaces() {
   return (
     <div>
       <div className={styles.orgscontainer}>
-      {myVariable.orgInfo.map((org: any) => (
+      {myVariable.orgInfo && myVariable.orgInfo.map((org: any) => (
         <OrgCard 
           key={org.org_id} 
           orgName={org.org_name} 
@@ -128,6 +128,7 @@ async function fetchSnetWorkspaces() {
           numberOfRepos={org.repos.length} 
         />
       ))}
+      test
       </div>
     </div>
   );
