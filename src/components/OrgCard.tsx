@@ -2,7 +2,6 @@
 import React from 'react';
 import styles from '../styles/OrgCard.module.css';  // Import the module CSS
 import Link from 'next/link';
-import Image from 'next/image';
 
 type OrgCardProps = {
   orgName: string;
