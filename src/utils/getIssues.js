@@ -8,7 +8,7 @@ async function fetchIssues(org, repo) {
   try {
     const response = await axios.get(url, {
       headers: {
-        Authorization: `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
+        Authorization: `token ${process.env.GITHUB_TOKEN}`,
       },
     });
     issues = response.data;
@@ -22,7 +22,7 @@ async function fetchOrgProjects(org) {
   try {
     const response = await axios.get(url, {
       headers: {
-        Authorization: `token ${process.env.NEXT_PUBLIC_GITHUB_TOKEN}`,
+        Authorization: `token ${process.env.GITHUB_TOKEN}`,
         Accept: 'application/vnd.github.inertia-preview+json', 
       },
     });
