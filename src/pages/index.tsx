@@ -79,16 +79,23 @@ const Home: NextPage = () => {
     }
   }
 
-  async function fetchSnetWorkspaces() {
-    try {
-      const response = await axios.get('/api/getSnetWorkspaces');
-      console.log("Snet Workspaces:", response.data);
-      return response.data;
-    } catch (error) {
-      console.error("Error:", error);
-      return [];
-    }
+  const SERVER_API_KEY = process.env.SERVER_API_KEY; // Make sure to securely store your API key in environment variables
+
+async function fetchSnetWorkspaces() {
+  try {
+    const response = await axios.get('/api/getSnetWorkspaces', {
+      headers: {
+        'api_key': SERVER_API_KEY
+      }
+    });
+    console.log("Snet Workspaces:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error:", error);
+    return [];
   }
+}
+
 
   async function fetchSwarmWorkspaces() {
     try {
@@ -105,7 +112,7 @@ const Home: NextPage = () => {
   useEffect(() => {
     //testIssues();
     //fetchSwarmWorkspaces();
-    fetchSnetWorkspaces()
+    //fetchSnetWorkspaces()
     //getSNETDework("e155ee05-6d6e-49be-ae6c-93d6a36d4d41")
     //getsnetWorkspaces();
   }, []);
