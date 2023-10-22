@@ -82,24 +82,12 @@ export default async function handler(req, res) {
       return null;
     }
   }
-
-  function getPrefix(organizationName) {
-    const lowercaseName = organizationName.toLowerCase();
-    if (lowercaseName.includes('singularitynet ambassador program')) {
-      return 'snet';
-    } else if (lowercaseName.includes('swarm')) {
-      return 'swarm';
-    } else {
-      return 'defaultPrefix';
-    }
-  }
   
   function transformWorkspaces(workspaces, organizationName, orgSlug) {
-    const prefix = getPrefix(organizationName);
     let result = {};
   
     workspaces.forEach(workspace => {
-      const key = prefix + workspace.name.replace(/[^\w\s]/gi, '').replace(/\s+/g, '');
+      const key = workspace.name.replace(/[^\w\s]/gi, '').replace(/\s+/g, '');
       result[key] = {
         id: workspace.id,
         name: workspace.name,
