@@ -122,7 +122,7 @@ async function fetchSnetWorkspaces() {
     //fetchSnetWorkspaces()
     //getSNETDework("e155ee05-6d6e-49be-ae6c-93d6a36d4d41")
     //getsnetWorkspaces();
-    fetchExcelData();
+    //fetchExcelData();
   }, []);
 
   return (
