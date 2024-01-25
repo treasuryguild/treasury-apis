@@ -107,6 +107,14 @@ async function fetchSnetWorkspaces() {
     }
   }
   
+  const fetchExcelData = async () => {
+    try {
+      const response = await axios.get('/api/read-excel');
+      console.log(response.data); // Process your data here
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   useEffect(() => {
     //testIssues();
@@ -114,6 +122,7 @@ async function fetchSnetWorkspaces() {
     //fetchSnetWorkspaces()
     //getSNETDework("e155ee05-6d6e-49be-ae6c-93d6a36d4d41")
     //getsnetWorkspaces();
+    fetchExcelData();
   }, []);
 
   return (
