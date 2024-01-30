@@ -22,6 +22,7 @@ async function refreshAccessToken(refreshToken) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
   const fileId = process.env.GOOGLE_DOC_ID; 
   let accessToken = process.env.GOOGLE_ACCESS_TOKEN;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
@@ -48,7 +49,8 @@ export default async function handler(req, res) {
     worksheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
       data.push({ rowNumber, values: row.values });
     });
-
+    res.setHeader('Access-Control-Allow-Methods', 'GET');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Accept, Authorization');
     res.status(200).json({ data });
   } catch (error) {
     console.error('Error:', error);
