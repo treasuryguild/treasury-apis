@@ -22,7 +22,7 @@ async function refreshAccessToken(refreshToken) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   const fileId = process.env.GOOGLE_DOC_ID; 
   let accessToken = process.env.GOOGLE_ACCESS_TOKEN;
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
