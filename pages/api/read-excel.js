@@ -17,6 +17,10 @@ async function refreshAccessToken(refreshToken) {
     }),
   });
 
+  if (!tokenResponse.ok) {
+    throw new Error(`Failed to refresh token: ${tokenResponse.status} ${tokenResponse.statusText}`);
+  }
+
   const tokenData = await tokenResponse.json();
   return tokenData.access_token;
 }
@@ -30,10 +34,19 @@ export default async function handler(req, res) {
   try {
     let response = await makeRequest(fileId, accessToken);
 
-    // If token is expired, refresh it
+    // If token might be expired or invalid, attempt to refresh it
     if (response.status === 401) { // 401 Unauthorized
-      accessToken = await refreshAccessToken(refreshToken);
-      response = await makeRequest(fileId, accessToken);
+      try {
+        accessToken = await refreshAccessToken(refreshToken);
+        response = await makeRequest(fileId, accessToken);
+      } catch (refreshError) {
+        // Handle token refresh errors specifically
+        console.error('Token refresh error:', refreshError);
+        return res.status(401).json({
+          error: 'Unauthorized - Token refresh failed',
+          errorMessage: refreshError.message,
+        });
+      }
     }
 
     if (!response.ok) {
