@@ -5,6 +5,8 @@ import styles from '../styles/OrgCard.module.css';
 import { getIssues } from '../utils/getIssues';
 import axios from 'axios';
 
+const API_KEY = process.env.NEXT_PUBLIC_SERVER_API_KEY; 
+const SHOW_TEST_BUTTON = process.env.NEXT_PUBLIC_SHOW_TEST_BUTTON === 'true';
 interface Task {
   id: string;
   status: string;
@@ -29,8 +31,27 @@ interface TasksResponse {
 
 const Home: NextPage = () => {
   const { myVariable, setMyVariable } = useMyVariable();
+  const [testData, setTestData] = useState({
+    id: 123,
+    value: 'Test data'
+  });
   const orgSNET = '5c29434c-e830-442b-b9f5-d2fb00ee7b34'
   const orgSwarm = '67bd2c66-8ee8-4e2e-a22b-6cdc5d805a85'
+
+  async function sendTestData() {
+    try {
+      const response = await axios.post('/api/txJsonGenerator', testData, {
+        headers: {
+          'Authorization': `Bearer ${API_KEY}`
+        }
+      });
+      console.log("Response from server:", response.data);
+      alert("Data sent successfully!");
+    } catch (error) {
+      console.error("Error sending data:", error);
+      alert("Error sending data. Check the console for details.");
+    }
+  }
 
   async function testIssues() {
     const issues = await getIssues();
@@ -128,7 +149,8 @@ async function fetchSnetWorkspaces() {
   return (
     <div>
       <div className={styles.orgscontainer}>
-      test
+        test
+        {SHOW_TEST_BUTTON && <button onClick={sendTestData}>Send Test Data</button>}
       </div>
     </div>
   );
