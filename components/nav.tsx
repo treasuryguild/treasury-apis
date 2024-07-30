@@ -9,7 +9,7 @@ const Nav = () => {
   return (
     <nav className="routes">
           <Link href="/" className="navitems">
-            Groups
+            Home
           </Link>
           <Link href="/other" className="navitems">
             Other
