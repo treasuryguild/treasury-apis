@@ -16,8 +16,8 @@ const TestDataButton: FC<TestDataButtonProps> = ({ testData }) => {
     try {
       const response = await axios.post('/api/txJsonGenerator', testData, {
         headers: {
-          'Authorization': `Bearer ${API_KEY}`
-        }
+            'api_key': API_KEY
+          }
       });
       console.log("Response from server:", response.data);
       alert("Data sent successfully!");
