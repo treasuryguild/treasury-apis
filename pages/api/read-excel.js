@@ -1,28 +1,25 @@
 // pages/api/read-excel.js
 import ExcelJS from 'exceljs';
-import fetch from 'node-fetch';
+import axios from 'axios';
 
 async function refreshAccessToken(refreshToken) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
+  try {
+    const response = await axios.post('https://oauth2.googleapis.com/token', {
       client_id: clientId,
       client_secret: clientSecret,
       refresh_token: refreshToken,
       grant_type: 'refresh_token',
-    }),
-  });
+    }, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
 
-  if (!tokenResponse.ok) {
-    throw new Error(`Failed to refresh token: ${tokenResponse.status} ${tokenResponse.statusText}`);
+    return response.data.access_token;
+  } catch (error) {
+    throw new Error(`Failed to refresh token: ${error.response?.status} ${error.response?.statusText}`);
   }
-
-  const tokenData = await tokenResponse.json();
-  return tokenData.access_token;
 }
 
 export default async function handler(req, res) {
@@ -32,28 +29,27 @@ export default async function handler(req, res) {
   const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
   try {
-    let response = await makeRequest(fileId, accessToken);
-
-    // If token might be expired or invalid, attempt to refresh it
-    if (response.status === 401) { // 401 Unauthorized
-      try {
-        accessToken = await refreshAccessToken(refreshToken);
-        response = await makeRequest(fileId, accessToken);
-      } catch (refreshError) {
-        // Handle token refresh errors specifically
-        console.error('Token refresh error:', refreshError);
-        return res.status(401).json({
-          error: 'Unauthorized - Token refresh failed',
-          errorMessage: refreshError.message,
-        });
+    let response;
+    try {
+      response = await makeRequest(fileId, accessToken);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        try {
+          accessToken = await refreshAccessToken(refreshToken);
+          response = await makeRequest(fileId, accessToken);
+        } catch (refreshError) {
+          console.error('Token refresh error:', refreshError);
+          return res.status(401).json({
+            error: 'Unauthorized - Token refresh failed',
+            errorMessage: refreshError.message,
+          });
+        }
+      } else {
+        throw error;
       }
     }
 
-    if (!response.ok) {
-      throw new Error(`Google Drive API Response Error: ${response.status} ${response.statusText}`);
-    }
-
-    const buffer = await response.buffer();
+    const buffer = Buffer.from(response.data);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(buffer);
 
@@ -78,7 +74,8 @@ export default async function handler(req, res) {
 
 async function makeRequest(fileId, accessToken) {
   const url = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`;
-  return fetch(url, {
+  return axios.get(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
+    responseType: 'arraybuffer'
   });
 }
