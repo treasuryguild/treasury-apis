@@ -1,4 +1,5 @@
-import axios from 'axios';
+// ../pages/api/txJsonGenerator.js
+import { processAndInsertData } from '../../utils/dataProcessor';
 
 const API_KEY = process.env.SERVER_API_KEY;
 
@@ -35,14 +36,22 @@ export default async function handler(req, res) {
       console.log('Received data:', receivedData);
 
       const fetchedData = await fetchComparisonData(receivedData);
-
+      //const errors = compareData(receivedData, fetchedData);
       const errors = [];
 
-      if (errors.length === 0) {
-        res.status(200).json({ message: 'Data is correct', data: receivedData });
-      } else {
-        res.status(400).json({ message: 'Data validation failed', errors: errors });
+      if (errors.length > 0) {
+        return res.status(400).json({ message: 'Data validation failed', errors: errors });
       }
+
+      // Process and insert data using the utility function
+      const { insertedData, rawData, processedData } = await processAndInsertData(receivedData);
+
+      res.status(200).json({ 
+        message: 'Data validated, stored, and processed successfully', 
+        rawData: rawData,
+        processedData: processedData
+      });
+
     } catch (error) {
       console.error('Error processing request:', error);
       res.status(500).json({ message: 'Internal server error', error: error.message });
