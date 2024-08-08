@@ -11,14 +11,54 @@ import ExcelDataFetcher from '../utils/ExcelDataFetcher';
 
 const SHOW_TEST_BUTTON = process.env.NEXT_PUBLIC_SHOW_TEST_BUTTON === 'true';
 
+// Define types for our test data
+interface TokenRegistry {
+  assetName: string;
+  tokenTicker: string;
+  multiplier: string;
+  policyId: string;
+  exhangeRateNeeded: string;
+}
+
+interface TokenFee {
+  groupName: string;
+  tokenTicker: string;
+  fee: string;
+  walletAddress: string;
+  walletName: string;
+}
+
+interface Task {
+  taskId: string;
+  groupName: string;
+  subGroup: string;
+  taskLabels: string;
+  taskName: string;
+  walletAddress: string;
+  proofLink: string;
+  date: string;
+  tokenT: Array<{
+    [key: string]: string;
+  }>;
+}
+
+interface TestData {
+  tokenRegistry: TokenRegistry[];
+  tokenFee: TokenFee[];
+  tasks: Task[];
+}
+
 const Home: NextPage = () => {
   const { myVariable, setMyVariable } = useMyVariable();
-  const [testData, setTestData] = useState({
-    id: 123,
-    value: 'Test data'
-  });
+  const [testData, setTestData] = useState<TestData | null>(null);
 
   useEffect(() => {
+    // Fetch the JSON data
+    fetch('/testData.json')
+      .then(response => response.json())
+      .then(data => setTestData(data))
+      .catch(error => console.error('Error loading test data:', error));
+
     // Uncomment the desired function calls
     // ExcelDataFetcher.fetchExcelData();
   }, []);
@@ -27,15 +67,14 @@ const Home: NextPage = () => {
     <div>
       <div className={styles.orgscontainer}>
         test
-        {SHOW_TEST_BUTTON && (
-            <>
-              <TestDataButton testData={testData} />
-              <SnetWorkspacesTestButton />
-              <SwarmWorkspacesTestButton />
-              <WalletDataTestButton />
-            </>
-          )
-        }
+        {SHOW_TEST_BUTTON && testData && (
+          <>
+            <TestDataButton testData={testData} />
+            <SnetWorkspacesTestButton />
+            <SwarmWorkspacesTestButton />
+            <WalletDataTestButton />
+          </>
+        )}
       </div>
     </div>
   );
