@@ -36,3 +36,6 @@ next-env.d.ts
 .env
 # Local Netlify folder
 .netlify
+
+# Excluded public file
+/public/testData.json
