@@ -17,7 +17,7 @@ function initializeTransformedData(rawData) {
           `Recipients: ${rawData.tasks.length}`,
           "", "", "", // These will be updated dynamically
           "Transaction made by Treasury Guild ;-)",
-          "https://www.treasuryguild.io/"
+          "https://www.treasuryguild.com/"
         ],
         contributions: []
       }
