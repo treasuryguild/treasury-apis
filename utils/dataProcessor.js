@@ -14,7 +14,7 @@ function initializeTransformedData(rawData) {
         mdVersion: ["1.4"],
         msg: [
           "Treasury Guild Bulk Transaction",
-          `Recipients: ${rawData.tasks.length}`,
+          `Recipients: ${Object.keys(rawData.tasks).length}`,
           "", "", "", // These will be updated dynamically
           "Transaction made by Treasury Guild ;-)",
           "https://www.treasuryguild.com/"
@@ -27,13 +27,15 @@ function initializeTransformedData(rawData) {
 
 function createTokenRegistry(rawData) {
   return Object.fromEntries(
-    rawData.tokenRegistry.map(token => [token.tokenTicker, token])
+    Object.values(rawData.tokenRegistry).map(token => [token.tokenTicker, token])
   );
 }
 
 function createFeeWallets(rawData) {
   return Object.fromEntries(
-    rawData.tokenFee.map(fee => [fee.tokenTicker, { ...fee, totalAmount: 0 }])
+    Object.values(rawData.tokenFee)
+      .filter(fee => fee.tokenTicker !== "") // Filter out empty entries
+      .map(fee => [fee.tokenTicker, { ...fee, totalAmount: 0 }])
   );
 }
 
@@ -110,7 +112,7 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
   let agixTotal = 0;
   let usdTotal = 0;
 
-  for (const [token, amount] of Object.entries(task.tokenT[0])) {
+  for (const [token, amount] of Object.entries(task.tokenT)) {
     if (amount && amount !== "") {
       const { upperToken, tokenInfo, quantity, adjustedAmount } = processToken(token, amount, tokenRegistry, tokenTotals, feeWallets);
 
@@ -136,7 +138,7 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
 function processFees(feeWallets, tokenRegistry, transformedData) {
   for (const [token, feeInfo] of Object.entries(feeWallets)) {
     if (feeInfo.totalAmount > 0) {
-      const feeAmount = feeInfo.totalAmount * (parseFloat(feeInfo.fee) / 100);
+      const feeAmount = feeInfo.totalAmount * (parseFloat(feeInfo.fee.replace(',', '.')) / 100);
       const tokenInfo = tokenRegistry[token];
       const feeQuantity = calculateQuantity(feeAmount.toString(), tokenInfo.multiplier);
 
@@ -185,7 +187,7 @@ export async function transformData(rawData) {
   const feeWallets = createFeeWallets(rawData);
   const tokenTotals = {};
 
-  for (const task of rawData.tasks) {
+  for (const task of Object.values(rawData.tasks)) {
     processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData);
   }
 
