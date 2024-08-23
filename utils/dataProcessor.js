@@ -3,6 +3,42 @@ import supabase from '../lib/supabaseClient';
 
 const AGIX_USD_RATE = 0.4; // Hardcoded exchange rate, can be replaced with API call later
 
+let validTokens = new Map(); // Store valid tokens
+
+export async function fetchValidTokens() {
+  if (validTokens.size === 0) {
+    console.log('Fetching valid tokens from database...');
+    const { data, error } = await supabase
+      .from('tokens')
+      .select('policy_id, ticker')
+      .eq('asset_type', 'fungible');
+
+    if (error) {
+      console.error('Error fetching tokens:', error);
+      throw error;
+    }
+
+    validTokens = new Map(data.map(token => [token.policy_id.toLowerCase(), token.ticker.toUpperCase()]));
+    console.log('Fetched valid tokens:', Object.fromEntries(validTokens));
+  }
+  return validTokens;
+}
+
+export function isValidToken(policyId, tokens) {
+  const lowercasePolicyId = policyId.toLowerCase();
+  const isValid = tokens.has(lowercasePolicyId);
+  console.log(`Checking if token with policy ID ${lowercasePolicyId} is valid:`, isValid);
+  return isValid;
+}
+
+export function getTokenTicker(policyId, tokens) {
+  return tokens.get(policyId);
+}
+
+export async function getValidTokens() {
+  return await fetchValidTokens();
+}
+
 function initializeTransformedData(rawData) {
   return {
     type: "tx",
@@ -182,6 +218,8 @@ function updateMetadataMessages(tokenTotals, transformedData) {
 }
 
 export async function transformData(rawData) {
+  await fetchValidTokens(); // Fetch valid tokens before processing
+
   const transformedData = initializeTransformedData(rawData);
   const tokenRegistry = createTokenRegistry(rawData);
   const feeWallets = createFeeWallets(rawData);
@@ -208,6 +246,8 @@ async function processData(transformedData) {
 
 export async function processAndInsertData(rawData) {
   try {
+    await fetchValidTokens(); // Ensure valid tokens are fetched before processing
+
     // Transform the raw data
     const transformedData = await transformData(rawData);
 

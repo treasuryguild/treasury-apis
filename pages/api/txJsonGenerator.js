@@ -1,31 +1,46 @@
 // ../pages/api/txJsonGenerator.js
-import { processAndInsertData } from '../../utils/dataProcessor';
+import { processAndInsertData, isValidToken, getValidTokens } from '../../utils/dataProcessor';
 import supabase from '../../lib/supabaseClient';
 
 const API_KEY = process.env.SERVER_API_KEY;
 const TESTING_MODE = false; // Set this to false to disable testing mode
 
 // Hardcoded array of existing taskIds (for demonstration purposes)
-const existingTaskIds = ['50216', '50217', '11994'];
+const existingTaskIds = ['50216', '50217', '11993'];
 
-// Helper functions for error checks (to be implemented later)
+// Helper functions for error checks
 const isTaskIdUnique = (taskId) => !existingTaskIds.includes(taskId);
-const isValidTokenTicker = (ticker) => ['AGIX', 'ADA', 'GMBL', 'MINS', 'GOVWG'].includes(ticker.toUpperCase());
 const isValidWalletAddress = (address) => address.startsWith('addr1') && address.length === 103;
 
-function validateData(data) {
+async function validateData(data) {
   const errors = [];
+  const validTokens = await getValidTokens();
+
+  console.log('Valid tokens from database:', Object.fromEntries(validTokens));
+  console.log('Received tokenRegistry:', data.tokenRegistry);
 
   // Check if required fields are present
   if (!data.tokenRegistry || !data.tokenFee || !data.tasks) {
     errors.push({ code: 'MISSING_REQUIRED_FIELDS', message: 'Missing required fields: tokenRegistry, tokenFee, or tasks' });
   }
 
+  // Validate tokenRegistry
+  for (const [, tokenInfo] of Object.entries(data.tokenRegistry)) {
+    const policyId = tokenInfo.policyId.toLowerCase();
+    if (tokenInfo.tokenTicker.toUpperCase() === 'ADA') {
+      if (policyId !== '' && policyId !== 'ada') {
+        errors.push({ code: 'INVALID_ADA_POLICY_ID', message: `Invalid ADA policy ID: ${policyId}. Should be empty or 'ada'.` });
+      }
+    } else if (!isValidToken(policyId, validTokens)) {
+      errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${tokenInfo.tokenTicker} (Policy ID: ${policyId}) in tokenRegistry` });
+    }
+  }
+
   // Validate tasks
   if (data.tasks) {
-    Object.values(data.tasks).forEach((task, index) => {
+    for (const task of Object.values(data.tasks)) {
       if (!task.taskId) {
-        errors.push({ code: 'MISSING_TASK_ID', message: `Task at index ${index} is missing taskId` });
+        errors.push({ code: 'MISSING_TASK_ID', message: `Task is missing taskId` });
       }
 
       if (!isValidWalletAddress(task.walletAddress)) {
@@ -34,13 +49,25 @@ function validateData(data) {
 
       // Validate token amounts
       if (task.tokenT) {
-        Object.entries(task.tokenT).forEach(([token, amount]) => {
-          if (amount && !isValidTokenTicker(token)) {
-            errors.push({ code: 'INVALID_TOKEN_TICKER', message: `Invalid token ticker ${token} for task ${task.taskId}` });
+        for (const [token, amount] of Object.entries(task.tokenT)) {
+          if (amount !== undefined && amount !== "") {
+            const upperToken = token.toUpperCase();
+            const tokenInfo = data.tokenRegistry[Object.keys(data.tokenRegistry).find(key => data.tokenRegistry[key].tokenTicker.toUpperCase() === upperToken)];
+            console.log('Token:', token, 'Amount:', amount, 'Token Info:', tokenInfo);
+            
+            if (!tokenInfo) {
+              errors.push({ code: 'MISSING_TOKEN_INFO', message: `Missing token info for ${token} in task ${task.taskId}` });
+            } else {
+              const policyId = tokenInfo.policyId.toLowerCase();
+              console.log(`Checking policy ID: ${policyId} for token ${upperToken}`);
+              if (!isValidToken(policyId, validTokens)) {
+                errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.taskId}` });
+              }
+            }
           }
-        });
+        }
       }
-    });
+    }
   }
 
   return errors;
@@ -62,12 +89,18 @@ export default async function handler(req, res) {
   // Check for API key
   const apiKey = req.headers['api_key'];
   if (!apiKey || apiKey !== API_KEY) {
-    return res.status(401).json({ message: 'Unauthorized: Invalid or missing API key' });
+    return res.status(401).json({ 
+      errors: [{ code: 'UNAUTHORIZED', message: 'Invalid or missing API key' }],
+      message: 'Unauthorized: Invalid or missing API key'
+    });
   }
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    return res.status(405).json({ 
+      errors: [{ code: 'METHOD_NOT_ALLOWED', message: `Method ${req.method} Not Allowed` }],
+      message: `Method ${req.method} Not Allowed`
+    });
   }
 
   try {
@@ -79,28 +112,40 @@ export default async function handler(req, res) {
       try {
         receivedData = JSON.parse(receivedData);
       } catch (parseError) {
-        return res.status(400).json({ message: 'Bad Request: Invalid JSON string', error: parseError.message });
+        return res.status(400).json({ 
+          errors: [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }],
+          message: 'Bad Request: Invalid JSON string'
+        });
       }
     }
 
     // Check if receivedData is an object
     if (typeof receivedData !== 'object' || receivedData === null) {
-      return res.status(400).json({ message: 'Bad Request: Invalid data format. Expected an object or a valid JSON string.' });
+      return res.status(400).json({ 
+        errors: [{ code: 'INVALID_DATA_FORMAT', message: 'Invalid data format. Expected an object or a valid JSON string.' }],
+        message: 'Bad Request: Invalid data format. Expected an object or a valid JSON string.'
+      });
     }
 
     // Check for duplicate taskIds
     const duplicateTaskIds = checkForDuplicateTaskIds(receivedData);
     if (duplicateTaskIds.length > 0) {
       return res.status(409).json({ 
-        message: 'Conflict: Duplicate taskIds detected', 
-        duplicateTaskIds: duplicateTaskIds 
+        errors: duplicateTaskIds.map(taskId => ({ 
+          code: 'DUPLICATE_TASK_ID', 
+          message: `Duplicate taskId detected: ${taskId}` 
+        })),
+        message: 'Conflict: Duplicate taskIds detected'
       });
     }
 
     // Validate the data
-    const validationErrors = validateData(receivedData);
+    const validationErrors = await validateData(receivedData);
     if (validationErrors.length > 0) {
-      return res.status(422).json({ message: 'Unprocessable Entity: Data validation failed', errors: validationErrors });
+      return res.status(422).json({ 
+        errors: validationErrors,
+        message: 'Unprocessable Entity: Data validation failed'
+      });
     }
 
     if (TESTING_MODE) {
@@ -133,6 +178,9 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error processing request:', error);
-    res.status(500).json({ message: 'Internal Server Error', error: error.message });
+    res.status(500).json({ 
+      errors: [{ code: 'INTERNAL_SERVER_ERROR', message: error.message }],
+      message: 'Internal Server Error'
+    });
   }
 }
