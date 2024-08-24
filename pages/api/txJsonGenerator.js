@@ -1,15 +1,11 @@
 // ../pages/api/txJsonGenerator.js
-import { processAndInsertData, isValidToken, getValidTokens } from '../../utils/dataProcessor';
+import { processAndInsertData, isValidToken, getValidTokens, checkForDuplicateTaskIds } from '../../utils/dataProcessor';
 import supabase from '../../lib/supabaseClient';
 
 const API_KEY = process.env.SERVER_API_KEY;
 const TESTING_MODE = false; // Set this to false to disable testing mode
 
-// Hardcoded array of existing taskIds (for demonstration purposes)
-const existingTaskIds = ['50216', '50217', '11993'];
-
-// Helper functions for error checks
-const isTaskIdUnique = (taskId) => !existingTaskIds.includes(taskId);
+// Helper function for wallet address validation
 const isValidWalletAddress = (address) => address.startsWith('addr1') && address.length === 103;
 
 async function validateData(data) {
@@ -73,18 +69,6 @@ async function validateData(data) {
   return errors;
 }
 
-function checkForDuplicateTaskIds(data) {
-  const duplicateTaskIds = [];
-  if (data.tasks) {
-    Object.values(data.tasks).forEach((task) => {
-      if (task.taskId && !isTaskIdUnique(task.taskId)) {
-        duplicateTaskIds.push(task.taskId);
-      }
-    });
-  }
-  return duplicateTaskIds;
-}
-
 export default async function handler(req, res) {
   // Check for API key
   const apiKey = req.headers['api_key'];
@@ -128,7 +112,7 @@ export default async function handler(req, res) {
     }
 
     // Check for duplicate taskIds
-    const duplicateTaskIds = checkForDuplicateTaskIds(receivedData);
+    const { duplicateTaskIds, newTaskIds } = await checkForDuplicateTaskIds(receivedData);
     if (duplicateTaskIds.length > 0) {
       return res.status(409).json({ 
         errors: duplicateTaskIds.map(taskId => ({ 
@@ -154,7 +138,8 @@ export default async function handler(req, res) {
         .from('tx_json_generator_data')
         .insert({
           raw_data: receivedData,
-          reward_status: false
+          reward_status: false,
+          task_ids: newTaskIds
         })
         .select();
 
@@ -164,7 +149,8 @@ export default async function handler(req, res) {
 
       return res.status(200).json({
         message: 'Raw data inserted successfully (Testing Mode)',
-        rawData: insertedRawData[0].raw_data
+        rawData: insertedRawData[0].raw_data,
+        newTaskIds: newTaskIds
       });
     } else {
       // Process and insert data using the utility function
@@ -172,7 +158,8 @@ export default async function handler(req, res) {
 
       res.status(200).json({ 
         message: 'Data validated, transformed, stored, and processed successfully',
-        processedData: processedData
+        processedData: processedData,
+        newTaskIds: newTaskIds
       });
     }
 
