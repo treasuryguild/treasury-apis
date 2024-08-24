@@ -89,9 +89,9 @@ function initializeTransformedData(rawData) {
       "674": {
         mdVersion: ["1.4"],
         msg: [
-          "Treasury Guild Bulk Transaction",
+          "Swarm Treasury System Transaction",
           `Recipients: ${Object.keys(rawData.tasks).length}`,
-          "", "", "", // These will be updated dynamically
+          // The token-specific messages will be added dynamically later
           "Transaction made by Treasury Guild ;-)",
           "https://www.treasuryguild.com/"
         ],
@@ -244,17 +244,18 @@ function processFees(feeWallets, tokenRegistry, transformedData) {
 }
 
 function updateMetadataMessages(tokenTotals, transformedData) {
-  let msgIndex = 2;
-  for (const [token, total] of Object.entries(tokenTotals)) {
+  const tokenMessages = Object.entries(tokenTotals).map(([token, total]) => {
     if (token === 'AGIX') {
-      transformedData.metadata["674"].msg[msgIndex] = `${(total * AGIX_USD_RATE).toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
+      return `${(total * AGIX_USD_RATE).toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
     } else if (token === 'ADA') {
-      transformedData.metadata["674"].msg[msgIndex] = `${total.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
+      return `${total.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
     } else {
-      transformedData.metadata["674"].msg[msgIndex] = `0 USD in ${total.toFixed(2)} ${token}`;
+      return `0 USD in ${total.toFixed(2)} ${token}`;
     }
-    msgIndex++;
-  }
+  });
+
+  // Insert the token messages after the "Recipients" message
+  transformedData.metadata["674"].msg.splice(2, 0, ...tokenMessages);
 }
 
 export async function transformData(rawData) {
