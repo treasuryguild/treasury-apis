@@ -10,7 +10,7 @@ export async function fetchValidTokens() {
     console.log('Fetching valid tokens from database...');
     const { data, error } = await supabase
       .from('tokens')
-      .select('policy_id, ticker')
+      .select('policy_id, ticker, coingecko_name')
       .eq('asset_type', 'fungible');
 
     if (error) {
@@ -37,6 +37,46 @@ export function getTokenTicker(policyId, tokens) {
 
 export async function getValidTokens() {
   return await fetchValidTokens();
+}
+
+// New function to fetch existing taskIds from the database
+async function fetchExistingTaskIds() {
+  const { data, error } = await supabase
+    .from('tx_json_generator_data')
+    .select('task_ids');
+
+  if (error) {
+    console.error('Error fetching existing taskIds:', error);
+    throw error;
+  }
+
+  return data.flatMap(row => row.task_ids || []);
+}
+
+// Updated isTaskIdUnique function
+async function isTaskIdUnique(taskId, existingTaskIds) {
+  return !existingTaskIds.includes(taskId);
+}
+
+// Updated checkForDuplicateTaskIds function
+export async function checkForDuplicateTaskIds(data) {
+  const existingTaskIds = await fetchExistingTaskIds();
+  const duplicateTaskIds = [];
+  const newTaskIds = new Set();
+
+  if (data.tasks) {
+    for (const task of Object.values(data.tasks)) {
+      if (task.taskId) {
+        if (existingTaskIds.includes(task.taskId) || newTaskIds.has(task.taskId)) {
+          duplicateTaskIds.push(task.taskId);
+        } else {
+          newTaskIds.add(task.taskId);
+        }
+      }
+    }
+  }
+
+  return { duplicateTaskIds, newTaskIds: Array.from(newTaskIds) };
 }
 
 function initializeTransformedData(rawData) {
@@ -248,6 +288,12 @@ export async function processAndInsertData(rawData) {
   try {
     await fetchValidTokens(); // Ensure valid tokens are fetched before processing
 
+    // Check for duplicate taskIds
+    const { duplicateTaskIds, newTaskIds } = await checkForDuplicateTaskIds(rawData);
+    if (duplicateTaskIds.length > 0) {
+      throw new Error(`Duplicate taskIds detected: ${duplicateTaskIds.join(', ')}`);
+    }
+
     // Transform the raw data
     const transformedData = await transformData(rawData);
 
@@ -260,7 +306,8 @@ export async function processAndInsertData(rawData) {
       .insert({
         raw_data: rawData,
         processed_data: processedData,
-        reward_status: false
+        reward_status: false,
+        task_ids: newTaskIds // Add the new taskIds to the database
       })
       .select();
 
