@@ -3,7 +3,7 @@ import { processAndInsertData, isValidToken, getValidTokens, checkForDuplicateTa
 import supabase from '../../lib/supabaseClient';
 
 const API_KEY = process.env.SERVER_API_KEY;
-const TESTING_MODE = true; // Set this to false to disable testing mode
+const TESTING_MODE = false; // Set this to false to disable testing mode
 
 // Helper function for wallet address validation
 const isValidWalletAddress = (address) => address.startsWith('addr1') && address.length === 103;
@@ -46,7 +46,7 @@ async function validateData(data) {
       // Validate token amounts
       if (task.tokenT) {
         for (const [token, amount] of Object.entries(task.tokenT)) {
-          if (amount !== undefined && amount !== "") {
+          if (amount !== undefined && amount !== "" && token.toLowerCase() !== 'usd') {
             const upperToken = token.toUpperCase();
             const tokenInfo = data.tokenRegistry[Object.keys(data.tokenRegistry).find(key => data.tokenRegistry[key].tokenTicker.toUpperCase() === upperToken)];
             console.log('Token:', token, 'Amount:', amount, 'Token Info:', tokenInfo);
@@ -124,13 +124,13 @@ export default async function handler(req, res) {
     }
 
     // Validate the data
-    /*const validationErrors = await validateData(receivedData);
+    const validationErrors = await validateData(receivedData);
     if (validationErrors.length > 0) {
       return res.status(422).json({ 
         errors: validationErrors,
         message: 'Unprocessable Entity: Data validation failed'
       });
-    }*/
+    }
 
     if (TESTING_MODE) {
       // Insert only the raw data for testing purposes
