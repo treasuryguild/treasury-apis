@@ -3,7 +3,7 @@ import { processAndInsertData, isValidToken, getValidTokens, checkForDuplicateTa
 import supabase from '../../lib/supabaseClient';
 
 const API_KEY = process.env.SERVER_API_KEY;
-const TESTING_MODE = false; // Set this to false to disable testing mode
+const TESTING_MODE = true; // Set this to false to disable testing mode
 
 // Helper function for wallet address validation
 const isValidWalletAddress = (address) => address.startsWith('addr1') && address.length === 103;
