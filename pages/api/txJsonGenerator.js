@@ -69,6 +69,24 @@ async function validateData(data) {
   return errors;
 }
 
+async function insertRawDataWithErrors(receivedData, errors, newTaskIds = null) {
+  const { data: insertedRawData, error: insertError } = await supabase
+    .from('tx_json_generator_data')
+    .insert({
+      raw_data: receivedData,
+      reward_status: errors.length === 0 ? false : null,
+      task_ids: errors.length === 0 ? newTaskIds : null,
+      errors: errors.length > 0 ? errors : null
+    })
+    .select();
+
+  if (insertError) {
+    throw insertError;
+  }
+
+  return insertedRawData;
+}
+
 export default async function handler(req, res) {
   // Check for API key
   const apiKey = req.headers['api_key'];
@@ -96,6 +114,7 @@ export default async function handler(req, res) {
       try {
         receivedData = JSON.parse(receivedData);
       } catch (parseError) {
+        await insertRawDataWithErrors(req.body, [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }]);
         return res.status(400).json({ 
           errors: [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }],
           message: 'Bad Request: Invalid JSON string'
@@ -105,6 +124,7 @@ export default async function handler(req, res) {
 
     // Check if receivedData is an object
     if (typeof receivedData !== 'object' || receivedData === null) {
+      await insertRawDataWithErrors(receivedData, [{ code: 'INVALID_DATA_FORMAT', message: 'Invalid data format. Expected an object or a valid JSON string.' }]);
       return res.status(400).json({ 
         errors: [{ code: 'INVALID_DATA_FORMAT', message: 'Invalid data format. Expected an object or a valid JSON string.' }],
         message: 'Bad Request: Invalid data format. Expected an object or a valid JSON string.'
@@ -114,11 +134,13 @@ export default async function handler(req, res) {
     // Check for duplicate taskIds
     const { duplicateTaskIds, newTaskIds } = await checkForDuplicateTaskIds(receivedData);
     if (duplicateTaskIds.length > 0) {
+      const errors = duplicateTaskIds.map(taskId => ({ 
+        code: 'DUPLICATE_TASK_ID', 
+        message: `Duplicate taskId detected: ${taskId}` 
+      }));
+      await insertRawDataWithErrors(receivedData, errors);
       return res.status(409).json({ 
-        errors: duplicateTaskIds.map(taskId => ({ 
-          code: 'DUPLICATE_TASK_ID', 
-          message: `Duplicate taskId detected: ${taskId}` 
-        })),
+        errors: errors,
         message: 'Conflict: Duplicate taskIds detected'
       });
     }
@@ -126,6 +148,7 @@ export default async function handler(req, res) {
     // Validate the data
     const validationErrors = await validateData(receivedData);
     if (validationErrors.length > 0) {
+      await insertRawDataWithErrors(receivedData, validationErrors);
       return res.status(422).json({ 
         errors: validationErrors,
         message: 'Unprocessable Entity: Data validation failed'
@@ -134,19 +157,7 @@ export default async function handler(req, res) {
 
     if (TESTING_MODE) {
       // Insert only the raw data for testing purposes
-      const { data: insertedRawData, error: insertError } = await supabase
-        .from('tx_json_generator_data')
-        .insert({
-          raw_data: receivedData,
-          reward_status: false,
-          task_ids: newTaskIds
-        })
-        .select();
-
-      if (insertError) {
-        throw insertError;
-      }
-
+      const insertedRawData = await insertRawDataWithErrors(receivedData, [], newTaskIds);
       return res.status(200).json({
         message: 'Raw data inserted successfully (Testing Mode)',
         rawData: insertedRawData[0].raw_data,
@@ -165,9 +176,20 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Error processing request:', error);
-    res.status(500).json({ 
-      errors: [{ code: 'INTERNAL_SERVER_ERROR', message: error.message }],
-      message: 'Internal Server Error'
-    });
+    
+    // Attempt to insert raw data with error information
+    try {
+      await insertRawDataWithErrors(req.body, [{ code: 'INTERNAL_SERVER_ERROR', message: error.message }]);
+      res.status(500).json({
+        errors: [{ code: 'INTERNAL_SERVER_ERROR', message: error.message }],
+        message: 'Internal Server Error: Raw data stored with error information'
+      });
+    } catch (insertError) {
+      console.error('Error storing raw data with error information:', insertError);
+      res.status(500).json({
+        errors: [{ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to process and store data' }],
+        message: 'Internal Server Error: Failed to process and store data'
+      });
+    }
   }
 }
