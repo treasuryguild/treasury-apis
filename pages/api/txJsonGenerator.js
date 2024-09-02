@@ -124,13 +124,13 @@ export default async function handler(req, res) {
     }
 
     // Validate the data
-    const validationErrors = await validateData(receivedData);
+    /*const validationErrors = await validateData(receivedData);
     if (validationErrors.length > 0) {
       return res.status(422).json({ 
         errors: validationErrors,
         message: 'Unprocessable Entity: Data validation failed'
       });
-    }
+    }*/
 
     if (TESTING_MODE) {
       // Insert only the raw data for testing purposes
