@@ -197,34 +197,50 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
   transformedData.metadata["674"].contributions.push(contribution);
 }
 
-function processFees(feeWallets, tokenRegistry, transformedData) {
+function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals) {
   for (const [token, feeInfo] of Object.entries(feeWallets)) {
     if (feeInfo.totalAmount > 0) {
-      const feeAmount = feeInfo.totalAmount * (parseFloat(feeInfo.fee.replace(',', '.')) / 100);
-      const tokenInfo = tokenRegistry[token];
-      const feeQuantity = calculateQuantity(feeAmount.toString(), tokenInfo.multiplier);
+      // Only process tokens that are present in the tokenFee object
+      if (feeInfo.tokenTicker && feeInfo.walletAddress) {
+        let feeAmount = feeInfo.totalAmount * (parseFloat(feeInfo.fee.replace(',', '.')) / 100);
 
-      updateOutputs(transformedData.outputs, feeInfo.walletAddress, tokenInfo, feeQuantity);
-
-      const currentDate = new Date();
-      const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`;
-
-      const feeContribution = {
-        name: [`${feeInfo.groupName.toLowerCase()} contribution handling fee`],
-        arrayMap: {
-          date: [formattedDate],
-          label: ["Operations"],
-          subGroup: ["Treasury Guild"]
-        },
-        taskCreator: [feeInfo.groupName],
-        contributors: {
-          [feeInfo.walletAddress.slice(-6)]: {
-            [token]: feeAmount.toFixed(2)
-          }
+        // Apply rounding logic to the fee amount
+        feeAmount = Math.round(feeAmount);
+        if (feeAmount < 1) {
+          feeAmount = 1; // Ensure minimum value of 1
         }
-      };
 
-      transformedData.metadata["674"].contributions.push(feeContribution);
+        const tokenInfo = tokenRegistry[token];
+        const feeQuantity = calculateQuantity(feeAmount.toString(), tokenInfo.multiplier);
+
+        updateOutputs(transformedData.outputs, feeInfo.walletAddress, tokenInfo, feeQuantity);
+
+        // Accumulate the fee into the tokenTotals
+        if (!(token in tokenTotals)) {
+          tokenTotals[token] = 0;
+        }
+        tokenTotals[token] += feeAmount;
+
+        const currentDate = new Date();
+        const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`;
+
+        const feeContribution = {
+          name: [`${feeInfo.groupName.toLowerCase()} contribution handling fee`],
+          arrayMap: {
+            date: [formattedDate],
+            label: ["Operations"],
+            subGroup: ["Treasury Guild"]
+          },
+          taskCreator: [feeInfo.groupName],
+          contributors: {
+            [feeInfo.walletAddress.slice(-6)]: {
+              [token]: feeAmount.toFixed(2)
+            }
+          }
+        };
+
+        transformedData.metadata["674"].contributions.push(feeContribution);
+      }
     }
   }
 }
@@ -233,7 +249,7 @@ function updateMetadataMessages(tokenTotals, transformedData, exchangeRates) {
   const tokenMessages = Object.entries(tokenTotals).map(([token, total]) => {
     const rate = exchangeRates[token.toLowerCase()] || 0;
     const usdValue = total * rate;
-    
+
     if (token !== 'USD') {
       return `${usdValue.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
     }
@@ -300,7 +316,7 @@ export async function transformData(rawData) {
     processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData);
   }
 
-  processFees(feeWallets, tokenRegistry, transformedData);
+  processFees(feeWallets, tokenRegistry, transformedData, tokenTotals); // Pass tokenTotals to accumulate fees
   updateMetadataMessages(tokenTotals, transformedData, rawData.exchangeRates);
 
   return transformedData;
