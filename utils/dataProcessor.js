@@ -269,6 +269,8 @@ function determineProjectWallet(taskCreator) {
     switch (lowerTaskCreator) {
       case 'singularitynet':
         return 'singularity net ambassador wallet';
+      case 'singularitynet,governance guild':
+        return 'singularity net ambassador wallet';
       case 'treasury guild':
         return 'test wallet';
       case 'intersect':
