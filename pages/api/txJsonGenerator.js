@@ -24,7 +24,7 @@ async function validateData(data) {
   for (const [, tokenInfo] of Object.entries(data.tokenRegistry)) {
     const policyId = tokenInfo.policyId.toLowerCase();
     if (tokenInfo.tokenTicker.toUpperCase() === 'ADA') {
-      if (policyId !== '' && policyId !== 'ada') {
+      if (policyId !== '' && policyId !== 'ada' && policyId !== 'lovelace') {
         errors.push({ code: 'INVALID_ADA_POLICY_ID', message: `Invalid ADA policy ID: ${policyId}. Should be empty or 'ada'.` });
       }
     } else if (!isValidToken(policyId, validTokens)) {

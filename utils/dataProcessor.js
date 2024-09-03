@@ -20,6 +20,10 @@ export async function fetchValidTokens() {
     }
 
     validTokens = new Map(data.map(token => [token.policy_id.toLowerCase(), token.ticker.toUpperCase()]));
+    // Add valid ADA policy IDs
+    validTokens.set('', 'ADA');
+    validTokens.set('ada', 'ADA');
+    validTokens.set('lovelace', 'ADA');
     console.log('Fetched valid tokens:', Object.fromEntries(validTokens));
   }
   return validTokens;
@@ -125,13 +129,7 @@ function processToken(token, amount, tokenRegistry, tokenTotals, feeWallets) {
   let adjustedAmount = parseFloat(amount);
   let quantity = amount;
 
-  if (upperToken === 'USD') {
-    const agixAmount = adjustedAmount / AGIX_USD_RATE;
-    quantity = calculateQuantity(agixAmount.toString(), tokenRegistry['AGIX'].multiplier);
-    upperToken = 'AGIX';
-    tokenInfo = tokenRegistry['AGIX'];
-    adjustedAmount = agixAmount;
-  } else {
+  if (upperToken !== 'USD') {
     quantity = calculateQuantity(amount, tokenInfo.multiplier);
   }
 
@@ -148,23 +146,26 @@ function processToken(token, amount, tokenRegistry, tokenTotals, feeWallets) {
 }
 
 function updateOutputs(outputs, walletAddress, tokenInfo, quantity) {
-  if (!(walletAddress in outputs)) {
-    outputs[walletAddress] = [];
-  }
-
-  const existingTokenIndex = outputs[walletAddress].findIndex(
-    output => output.policyId === tokenInfo.policyId && output.assetName === tokenInfo.assetName
-  );
-
-  if (existingTokenIndex !== -1) {
-    outputs[walletAddress][existingTokenIndex].quantity = 
-      (BigInt(outputs[walletAddress][existingTokenIndex].quantity) + BigInt(quantity)).toString();
-  } else {
-    outputs[walletAddress].push({
-      quantity,
-      policyId: tokenInfo.policyId,
-      assetName: tokenInfo.assetName
-    });
+  console.log('Updating outputs:', outputs, 'Wallet:', walletAddress, 'Token:', tokenInfo, 'Quantity:', quantity);
+  if (tokenInfo) {
+    if (!(walletAddress in outputs)) {
+      outputs[walletAddress] = [];
+    }
+  
+    const existingTokenIndex = outputs[walletAddress].findIndex(
+      output => output.policyId === tokenInfo.policyId && output.assetName === tokenInfo.assetName
+    );
+  
+    if (existingTokenIndex !== -1) {
+      outputs[walletAddress][existingTokenIndex].quantity = 
+        (BigInt(outputs[walletAddress][existingTokenIndex].quantity) + BigInt(quantity)).toString();
+    } else {
+      outputs[walletAddress].push({
+        quantity,
+        policyId: tokenInfo.policyId,
+        assetName: tokenInfo.assetName
+      });
+    }
   }
 }
 
@@ -183,26 +184,13 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
   const walletShortcode = task.walletAddress.slice(-6);
   contribution.contributors[walletShortcode] = {};
 
-  let agixTotal = 0;
-  let usdTotal = 0;
-
   for (const [token, amount] of Object.entries(task.tokenT)) {
-    if (amount && amount !== "") {
+    if (amount && amount !== "" && token.toUpperCase() !== "USD") {
       const { upperToken, tokenInfo, quantity, adjustedAmount } = processToken(token, amount, tokenRegistry, tokenTotals, feeWallets);
-
-      if (upperToken === 'USD') {
-        usdTotal += parseFloat(amount);
-      } else if (upperToken === 'AGIX') {
-        agixTotal += adjustedAmount;
-      }
 
       updateOutputs(transformedData.outputs, task.walletAddress, tokenInfo, quantity);
 
-      if (upperToken === 'AGIX') {
-        contribution.contributors[walletShortcode][upperToken] = (agixTotal + (usdTotal / AGIX_USD_RATE)).toFixed(2);
-      } else {
-        contribution.contributors[walletShortcode][upperToken] = adjustedAmount.toString();
-      }
+      contribution.contributors[walletShortcode][upperToken] = adjustedAmount.toString();
     }
   }
 
@@ -241,16 +229,15 @@ function processFees(feeWallets, tokenRegistry, transformedData) {
   }
 }
 
-function updateMetadataMessages(tokenTotals, transformedData) {
+function updateMetadataMessages(tokenTotals, transformedData, exchangeRates) {
   const tokenMessages = Object.entries(tokenTotals).map(([token, total]) => {
-    if (token === 'AGIX') {
-      return `${(total * AGIX_USD_RATE).toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
-    } else if (token === 'ADA') {
-      return `${total.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
-    } else {
-      return `0 USD in ${total.toFixed(2)} ${token}`;
+    const rate = exchangeRates[token.toLowerCase()] || 0;
+    const usdValue = total * rate;
+    
+    if (token !== 'USD') {
+      return `${usdValue.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
     }
-  });
+  }).filter(Boolean); // Remove any undefined entries
 
   // Insert the token messages after the "Recipients" message
   transformedData.metadata["674"].msg.splice(2, 0, ...tokenMessages);
@@ -300,7 +287,7 @@ function determineProjectWallet(taskCreator) {
 }
 
 export async function transformData(rawData) {
-  await fetchValidTokens(); // Fetch valid tokens before processing
+  await fetchValidTokens();
 
   const transformedData = initializeTransformedData(rawData);
   const tokenRegistry = createTokenRegistry(rawData);
@@ -312,7 +299,7 @@ export async function transformData(rawData) {
   }
 
   processFees(feeWallets, tokenRegistry, transformedData);
-  updateMetadataMessages(tokenTotals, transformedData);
+  updateMetadataMessages(tokenTotals, transformedData, rawData.exchangeRates);
 
   return transformedData;
 }
