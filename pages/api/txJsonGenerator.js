@@ -32,6 +32,13 @@ async function validateData(data) {
     }
   }
 
+  // Convert commas to points in exchange rates
+  if (data.exchangeRates) {
+    Object.keys(data.exchangeRates).forEach(key => {
+      data.exchangeRates[key] = data.exchangeRates[key].replace(',', '.');
+    });
+  }
+
   // Validate tasks
   if (data.tasks) {
     for (const task of Object.values(data.tasks)) {
@@ -110,28 +117,17 @@ export default async function handler(req, res) {
     console.log('Received data:', receivedData);
 
     // Parse string to JSON if necessary
-    function safeJsonParse(input) {
-      try {
-        return JSON.parse(input);
-      } catch (error) {
-        // Attempt to handle some common errors, like misformatted numbers or commas
-        console.error("JSON parsing error:", error);
-        return null; // Return null if parsing fails
-      }
-    }
-    
     if (typeof receivedData === 'string') {
-      receivedData = safeJsonParse(receivedData);
-      
-      if (!receivedData) {
+      try {
+        receivedData = JSON.parse(receivedData);
+      } catch (parseError) {
         await insertRawDataWithErrors(req.body, [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }]);
-        return res.status(400).json({
+        return res.status(400).json({ 
           errors: [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }],
           message: 'Bad Request: Invalid JSON string'
         });
       }
     }
-    
 
     // Check if receivedData is an object
     if (typeof receivedData !== 'object' || receivedData === null) {
