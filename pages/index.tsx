@@ -7,6 +7,7 @@ import TestDataButton from '../components/TestDataButton';
 import SnetWorkspacesTestButton from '../components/SnetWorkspacesTestButton';
 import SwarmWorkspacesTestButton from '../components/SwarmWorkspacesTestButton';
 import WalletDataTestButton from '../components/WalletDataTestButton';
+import TransactionIdTestButton from '../components/TransactionIdTestButton';
 import ExcelDataFetcher from '../utils/ExcelDataFetcher';
 
 const SHOW_TEST_BUTTON = process.env.NEXT_PUBLIC_SHOW_TEST_BUTTON === 'true';
@@ -70,6 +71,7 @@ const Home: NextPage = () => {
         {SHOW_TEST_BUTTON && testData && (
           <>
             <TestDataButton testData={testData} />
+            <TransactionIdTestButton />
             <SnetWorkspacesTestButton />
             <SwarmWorkspacesTestButton />
             <WalletDataTestButton />
