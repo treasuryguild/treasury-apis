@@ -39,3 +39,5 @@ next-env.d.ts
 
 # Excluded public file
 /public/testData.json
+/public/testData2.json
+/public/processedData.json
