@@ -92,7 +92,7 @@ function initializeTransformedData(rawData) {
         mdVersion: ["1.4"],
         msg: [
           "Swarm Treasury System Transaction",
-          `Recipients: ${Object.keys(rawData.tasks).length}`,
+          `Recipients: ${new Set(Object.values(rawData.tasks).map(task => task.walletAddress)).size + 1}`,
           // The token-specific messages will be added dynamically later
           "Transaction made by Treasury Guild ;-)",
           "https://www.treasuryguild.com/"
@@ -110,11 +110,29 @@ function createTokenRegistry(rawData) {
 }
 
 function createFeeWallets(rawData) {
-  return Object.fromEntries(
-    Object.values(rawData.tokenFee)
-      .filter(fee => fee.tokenTicker !== "") // Filter out empty entries
-      .map(fee => [fee.tokenTicker, { ...fee, totalAmount: 0 }])
-  );
+  console.log("Raw tokenFee data:", rawData.tokenFee);
+  const feeWallets = new Map();
+
+  Object.values(rawData.tokenFee).forEach(fee => {
+    if (fee.groupName && fee.tokenTicker && fee.fee && fee.walletAddress) {
+      const groupName = fee.groupName.trim().toLowerCase();
+      const tokenTicker = fee.tokenTicker.trim().toUpperCase();
+      
+      if (!feeWallets.has(groupName)) {
+        feeWallets.set(groupName, new Map());
+      }
+      
+      feeWallets.get(groupName).set(tokenTicker, {
+        ...fee,
+        groupName: groupName,
+        tokenTicker: tokenTicker,
+        totalAmount: 0
+      });
+    }
+  });
+
+  console.log("Processed feeWallets:", feeWallets);
+  return feeWallets;
 }
 
 function calculateQuantity(amount, multiplier) {
@@ -197,52 +215,111 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
   transformedData.metadata["674"].contributions.push(contribution);
 }
 
-function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals) {
-  for (const [token, feeInfo] of Object.entries(feeWallets)) {
-    if (feeInfo.totalAmount > 0) {
-      // Only process tokens that are present in the tokenFee object
-      if (feeInfo.tokenTicker && feeInfo.walletAddress) {
-        let feeAmount = feeInfo.totalAmount * (parseFloat(feeInfo.fee.replace(',', '.')) / 100);
+function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, tasks) {
+  console.log("Starting fee processing...");
+  console.log("Fee Wallets:", feeWallets);
 
-        // Apply rounding logic to the fee amount
-        feeAmount = Math.round(feeAmount);
-        if (feeAmount < 1) {
-          feeAmount = 1; // Ensure minimum value of 1
-        }
+  const feeAccumulator = new Map();
 
-        const tokenInfo = tokenRegistry[token];
-        const feeQuantity = calculateQuantity(feeAmount.toString(), tokenInfo.multiplier);
+  // Iterate through the tasks
+  for (const task of Object.values(tasks)) {
+    const taskGroupName = task.groupName.trim().toLowerCase();
+    console.log(`Processing task with group: ${taskGroupName}`);
 
-        updateOutputs(transformedData.outputs, feeInfo.walletAddress, tokenInfo, feeQuantity);
+    // Get all fee configurations for this group
+    const groupFeeConfigs = feeWallets.get(taskGroupName);
 
-        // Accumulate the fee into the tokenTotals
-        if (!(token in tokenTotals)) {
-          tokenTotals[token] = 0;
-        }
-        tokenTotals[token] += feeAmount;
+    if (!groupFeeConfigs) {
+      console.log(`No fee configurations found for group: ${taskGroupName}`);
+      continue;
+    }
 
-        const currentDate = new Date();
-        const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`;
+    // For each task, iterate over all tokens in the task's tokenT
+    for (const [taskToken, taskAmount] of Object.entries(task.tokenT)) {
+      const taskTokenTicker = taskToken.trim().toUpperCase();
+      const parsedAmount = parseFloat(taskAmount);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        console.log(`Checking token ${taskTokenTicker} in task...`);
 
-        const feeContribution = {
-          name: [`${feeInfo.groupName.toLowerCase()} contribution handling fee`],
-          arrayMap: {
-            date: [formattedDate],
-            label: ["Operations"],
-            subGroup: ["Treasury Guild"]
-          },
-          taskCreator: [feeInfo.groupName],
-          contributors: {
-            [feeInfo.walletAddress.slice(-6)]: {
-              [token]: feeAmount.toFixed(2)
-            }
+        // Check if there's a fee configuration for this token
+        const feeInfo = groupFeeConfigs.get(taskTokenTicker);
+
+        if (feeInfo) {
+          console.log(`Match found for group ${taskGroupName} and token ${taskTokenTicker}`);
+
+          // Calculate the fee based on taskAmount for this token
+          const feePercentage = parseFloat(feeInfo.fee.replace(',', '.')) / 100;
+          const exactFeeAmount = parsedAmount * feePercentage;
+
+          // Accumulate the fee
+          if (!feeAccumulator.has(taskTokenTicker)) {
+            feeAccumulator.set(taskTokenTicker, { total: 0, feeInfo });
           }
-        };
+          feeAccumulator.get(taskTokenTicker).total += exactFeeAmount;
 
-        transformedData.metadata["674"].contributions.push(feeContribution);
+          console.log(`Accumulated fee: ${exactFeeAmount} ${taskTokenTicker} for group: ${taskGroupName}`);
+        } else {
+          console.log(`No fee configuration found for token ${taskTokenTicker} in group ${taskGroupName}`);
+        }
+      } else {
+        console.log(`Skipping token ${taskTokenTicker} due to invalid amount: ${taskAmount}`);
       }
     }
   }
+
+  // Process accumulated fees
+  for (const [tokenTicker, { total, feeInfo }] of feeAccumulator) {
+    // Round the total fee amount and ensure minimum of 1
+    let roundedFeeAmount = Math.max(1, Math.round(total));
+
+    // Retrieve the corresponding tokenInfo
+    const tokenInfoKey = Object.keys(tokenRegistry).find(
+      key => tokenRegistry[key].tokenTicker.toUpperCase() === tokenTicker
+    );
+    const tokenInfo = tokenRegistry[tokenInfoKey];
+
+    if (!tokenInfo) {
+      console.error(`Token information for ${tokenTicker} not found in tokenRegistry.`);
+      continue;
+    }
+
+    const feeQuantity = calculateQuantity(roundedFeeAmount.toString(), tokenInfo.multiplier);
+
+    // Update outputs for the wallet receiving the fee
+    updateOutputs(transformedData.outputs, feeInfo.walletAddress, tokenInfo, feeQuantity);
+
+    // Accumulate the fee into tokenTotals
+    if (!(tokenTicker in tokenTotals)) {
+      tokenTotals[tokenTicker] = 0;
+    }
+    tokenTotals[tokenTicker] += roundedFeeAmount;
+
+    const currentDate = new Date();
+    const formattedDate = `${String(currentDate.getDate()).padStart(2, '0')}.${String(currentDate.getMonth() + 1).padStart(2, '0')}.${currentDate.getFullYear()}`;
+
+    // Add contribution entry for the fee
+    const feeContribution = {
+      name: [`${feeInfo.groupName} contribution handling fee`],
+      arrayMap: {
+        date: [formattedDate],
+        label: ["Operations"],
+        subGroup: ["Treasury Guild"]
+      },
+      taskCreator: [feeInfo.groupName],
+      contributors: {
+        [feeInfo.walletAddress.slice(-6)]: {
+          [tokenTicker]: roundedFeeAmount.toFixed(2)
+        }
+      }
+    };
+
+    transformedData.metadata["674"].contributions.push(feeContribution);
+
+    // Log success
+    console.log(`Total fee added: ${roundedFeeAmount} ${tokenTicker} for group: ${feeInfo.groupName}`);
+  }
+
+  console.log("Fee processing complete.");
 }
 
 function updateMetadataMessages(tokenTotals, transformedData, exchangeRates) {
@@ -316,7 +393,7 @@ export async function transformData(rawData) {
     processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData);
   }
 
-  processFees(feeWallets, tokenRegistry, transformedData, tokenTotals); // Pass tokenTotals to accumulate fees
+  processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, rawData.tasks); // Pass tokenTotals to accumulate fees
   updateMetadataMessages(tokenTotals, transformedData, rawData.exchangeRates);
 
   return transformedData;
