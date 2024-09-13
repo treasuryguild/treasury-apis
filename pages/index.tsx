@@ -55,7 +55,7 @@ const Home: NextPage = () => {
 
   useEffect(() => {
     // Fetch the JSON data
-    fetch('/testData2.json')
+    fetch('/testData.json')
       .then(response => response.json())
       .then(data => setTestData(data))
       .catch(error => console.error('Error loading test data:', error));
