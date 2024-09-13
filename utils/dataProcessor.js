@@ -187,10 +187,33 @@ function updateOutputs(outputs, walletAddress, tokenInfo, quantity) {
   }
 }
 
+function splitStringIntoChunks(text, maxLength) {
+  const words = text.split(' ');
+  const chunks = [];
+  let currentChunk = '';
+
+  for (const word of words) {
+    if ((currentChunk + ' ' + word).trim().length <= maxLength) {
+      currentChunk = (currentChunk + ' ' + word).trim();
+    } else {
+      if (currentChunk.length > 0) {
+        chunks.push(currentChunk);
+      }
+      currentChunk = word;
+    }
+  }
+
+  if (currentChunk.length > 0) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
+}
+
 function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData) {
   const contribution = {
     taskCreator: task.groupName,
-    name: [task.taskName],
+    name: splitStringIntoChunks(task.taskName, 55),
     arrayMap: {
       label: task.taskLabels.split(','),
       subGroup: [task.subGroup],
@@ -324,10 +347,9 @@ function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, ta
 
 function updateMetadataMessages(tokenTotals, transformedData, exchangeRates) {
   const tokenMessages = Object.entries(tokenTotals).map(([token, total]) => {
-    const rate = exchangeRates[token.toLowerCase()] || 0;
-    const usdValue = total * rate;
-
-    if (token !== 'USD') {
+    const rate = exchangeRates[token.toLowerCase()];
+    if (rate && token !== 'USD') {
+      const usdValue = total * rate;
       return `${usdValue.toFixed(2)} USD in ${total.toFixed(2)} ${token}`;
     }
   }).filter(Boolean); // Remove any undefined entries
