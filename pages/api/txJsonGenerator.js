@@ -1,5 +1,5 @@
 // ../pages/api/txJsonGenerator.js
-import { processAndInsertData, isValidToken, getValidTokens, checkForDuplicateTaskIds } from '../../utils/dataProcessor';
+import { processAndInsertData, isValidToken, getValidTokens, checkForDuplicateRecognitionIds } from '../../utils/dataProcessor';
 import supabase from '../../lib/supabaseClient';
 
 const API_KEY = process.env.SERVER_API_KEY;
@@ -42,12 +42,12 @@ async function validateData(data) {
   // Validate tasks
   if (data.tasks) {
     for (const task of Object.values(data.tasks)) {
-      if (!task.taskId) {
-        errors.push({ code: 'MISSING_TASK_ID', message: `Task is missing taskId` });
+      if (!task.recognitionId) {
+        errors.push({ code: 'MISSING_TASK_ID', message: `Task is missing recognitionId` });
       }
 
       if (!isValidWalletAddress(task.walletAddress)) {
-        errors.push({ code: 'INVALID_WALLET_ADDRESS', message: `Invalid wallet address for task ${task.taskId}` });
+        errors.push({ code: 'INVALID_WALLET_ADDRESS', message: `Invalid wallet address for task ${task.recognitionId}` });
       }
 
       // Validate token amounts
@@ -59,12 +59,12 @@ async function validateData(data) {
             console.log('Token:', token, 'Amount:', amount, 'Token Info:', tokenInfo);
             
             if (!tokenInfo) {
-              errors.push({ code: 'MISSING_TOKEN_INFO', message: `Missing token info for ${token} in task ${task.taskId}` });
+              errors.push({ code: 'MISSING_TOKEN_INFO', message: `Missing token info for ${token} in task ${task.recognitionId}` });
             } else {
               const policyId = tokenInfo.policyId.toLowerCase();
               console.log(`Checking policy ID: ${policyId} for token ${upperToken}`);
               if (!isValidToken(policyId, validTokens)) {
-                errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.taskId}` });
+                errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.recognitionId}` });
               }
             }
           }
@@ -76,13 +76,13 @@ async function validateData(data) {
   return errors;
 }
 
-async function insertRawDataWithErrors(receivedData, errors, newTaskIds = null) {
+async function insertRawDataWithErrors(receivedData, errors, newRecognitionIds = null) {
   const { data: insertedRawData, error: insertError } = await supabase
     .from('tx_json_generator_data')
     .insert({
       raw_data: receivedData,
       reward_status: errors.length === 0 ? false : null,
-      task_ids: errors.length === 0 ? newTaskIds : null,
+      recognition_ids: errors.length === 0 ? newRecognitionIds : null,
       errors: errors.length > 0 ? errors : null
     })
     .select();
@@ -138,17 +138,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check for duplicate taskIds
-    const { duplicateTaskIds, newTaskIds } = await checkForDuplicateTaskIds(receivedData);
-    if (duplicateTaskIds.length > 0) {
-      const errors = duplicateTaskIds.map(taskId => ({ 
-        code: 'DUPLICATE_TASK_ID', 
-        message: `Duplicate taskId detected: ${taskId}` 
+    // Check for duplicate recognitionIds
+    const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(receivedData);
+    if (duplicateRecognitionIds.length > 0) {
+      const errors = duplicateRecognitionIds.map(recognitionId => ({ 
+        code: 'DUPLICATE_RECOGNITION_ID', 
+        message: `Duplicate recognitionId detected: ${recognitionId}` 
       }));
       await insertRawDataWithErrors(receivedData, errors);
       return res.status(409).json({ 
         errors: errors,
-        message: 'Conflict: Duplicate taskIds detected'
+        message: 'Conflict: Duplicate recognitionIds detected'
       });
     }
 
@@ -164,11 +164,11 @@ export default async function handler(req, res) {
 
     if (TESTING_MODE) {
       // Insert only the raw data for testing purposes
-      const insertedRawData = await insertRawDataWithErrors(receivedData, [], newTaskIds);
+      const insertedRawData = await insertRawDataWithErrors(receivedData, [], newRecognitionIds);
       return res.status(200).json({
         message: 'Raw data inserted successfully (Testing Mode)',
         rawData: insertedRawData[0].raw_data,
-        newTaskIds: newTaskIds
+        newRecognitionIds: newRecognitionIds
       });
     } else {
       // Process and insert data using the utility function
@@ -177,7 +177,7 @@ export default async function handler(req, res) {
       res.status(200).json({ 
         message: 'Data validated, transformed, stored, and processed successfully',
         processedData: processedData,
-        newTaskIds: newTaskIds
+        newRecognitionIds: newRecognitionIds
       });
     }
 

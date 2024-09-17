@@ -30,7 +30,7 @@ interface TokenFee {
 }
 
 interface Task {
-  taskId: string;
+  recognitionId: string;
   groupName: string;
   subGroup: string;
   taskLabels: string;

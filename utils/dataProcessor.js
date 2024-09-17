@@ -44,41 +44,41 @@ export async function getValidTokens() {
   return await fetchValidTokens();
 }
 
-async function fetchExistingTaskIds() {
+async function fetchExistingRecognitionIds() {
   const { data, error } = await supabase
     .from('tx_json_generator_data')
-    .select('task_ids');
+    .select('recognition_ids');
 
   if (error) {
-    console.error('Error fetching existing taskIds:', error);
+    console.error('Error fetching existing recognitionIds:', error);
     throw error;
   }
 
-  return data.flatMap(row => row.task_ids || []);
+  return data.flatMap(row => row.recognition_ids || []);
 }
 
-async function isTaskIdUnique(taskId, existingTaskIds) {
-  return !existingTaskIds.includes(taskId);
+async function isRecognitionIdUnique(recognitionId, existingRecognitionIds) {
+  return !existingRecognitionIds.includes(recognitionId);
 }
 
-export async function checkForDuplicateTaskIds(data) {
-  const existingTaskIds = await fetchExistingTaskIds();
-  const duplicateTaskIds = [];
-  const newTaskIds = new Set();
+export async function checkForDuplicateRecognitionIds(data) {
+  const existingRecognitionIds = await fetchExistingRecognitionIds();
+  const duplicateRecognitionIds = [];
+  const newRecognitionIds = new Set();
 
   if (data.tasks) {
     for (const task of Object.values(data.tasks)) {
-      if (task.taskId) {
-        if (existingTaskIds.includes(task.taskId) || newTaskIds.has(task.taskId)) {
-          duplicateTaskIds.push(task.taskId);
+      if (task.recognitionId) {
+        if (existingRecognitionIds.includes(task.recognitionId) || newRecognitionIds.has(task.recognitionId)) {
+          duplicateRecognitionIds.push(task.recognitionId);
         } else {
-          newTaskIds.add(task.taskId);
+          newRecognitionIds.add(task.recognitionId);
         }
       }
     }
   }
 
-  return { duplicateTaskIds, newTaskIds: Array.from(newTaskIds) };
+  return { duplicateRecognitionIds, newRecognitionIds: Array.from(newRecognitionIds) };
 }
 
 function initializeTransformedData(rawData) {
@@ -432,34 +432,27 @@ async function processData(transformedData) {
 
 export async function processAndInsertData(rawData) {
   try {
-    await fetchValidTokens(); // Ensure valid tokens are fetched before processing
-    await fetchProjectWallets(); // Fetch project wallets
+    await fetchValidTokens();
+    await fetchProjectWallets();
 
-    // Check for duplicate taskIds
-    const { duplicateTaskIds, newTaskIds } = await checkForDuplicateTaskIds(rawData);
-    if (duplicateTaskIds.length > 0) {
-      throw new Error(`Duplicate taskIds detected: ${duplicateTaskIds.join(', ')}`);
+    const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(rawData);
+    if (duplicateRecognitionIds.length > 0) {
+      throw new Error(`Duplicate recognitionIds detected: ${duplicateRecognitionIds.join(', ')}`);
     }
 
-    // Transform the raw data
     const transformedData = await transformData(rawData);
-
-    // Process the transformed data
     const processedData = await processData(transformedData);
-
-    // Determine the project wallet based on the task creator
     const taskCreator = Object.values(rawData.tasks)[0].groupName; 
     const projectWallet = determineProjectWallet(taskCreator);
 
-    // Insert both raw and processed data into Supabase
     const { data: insertedData, error } = await supabase
       .from('tx_json_generator_data')
       .insert({
         raw_data: rawData,
         processed_data: processedData,
         reward_status: false,
-        task_ids: newTaskIds,
-        project_wallet: projectWallet // Add the project wallet to the insertion
+        recognition_ids: newRecognitionIds,
+        project_wallet: projectWallet
       })
       .select();
 
