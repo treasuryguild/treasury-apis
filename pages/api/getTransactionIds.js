@@ -18,19 +18,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { taskIds } = req.body;
+    const { recognitionIds } = req.body;
 
-    if (!Array.isArray(taskIds) || taskIds.length === 0) {
-      return res.status(400).json({ error: 'Invalid input: taskIds must be a non-empty array' });
+    if (!Array.isArray(recognitionIds) || recognitionIds.length === 0) {
+      return res.status(400).json({ error: 'Invalid input: recognitionIds must be a non-empty array' });
     }
 
-    // Convert all taskIds to strings
-    const normalizedTaskIds = taskIds.map(id => id.toString());
+    // Convert all recognitionIds to strings
+    const normalizedRecognitionIds = recognitionIds.map(id => id.toString());
 
     // Query the database for the latest 5 entries with transaction_ids
     const { data, error } = await supabase
       .from('tx_json_generator_data')
-      .select('task_ids, transaction_id')
+      .select('recognition_ids, transaction_id')
       .not('transaction_id', 'is', null)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -39,13 +39,13 @@ export default async function handler(req, res) {
       throw error;
     }
 
-    // Process the results to match taskIds with transaction_ids
-    const result = normalizedTaskIds.map(taskId => {
+    // Process the results to match recognitionIds with transaction_ids
+    const result = normalizedRecognitionIds.map(recognitionId => {
       const matchingEntry = data.find(entry => 
-        Array.isArray(entry.task_ids) && entry.task_ids.some(id => id.toString() === taskId)
+        Array.isArray(entry.recognition_ids) && entry.recognition_ids.some(id => id.toString() === recognitionId)
       );
       return {
-        taskId,
+        recognitionId,
         transactionId: matchingEntry ? matchingEntry.transaction_id : null
       };
     });

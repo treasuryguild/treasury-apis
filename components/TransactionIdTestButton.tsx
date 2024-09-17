@@ -3,7 +3,7 @@ import { FC, useState } from 'react';
 import axios from 'axios';
 
 interface TransactionIdResult {
-  taskId: string;
+  recognitionId: string;
   transactionId: string | null;
 }
 
@@ -19,11 +19,11 @@ const TransactionIdTestButton: FC = () => {
     setError(null);
 
     try {
-      // Example with mixed number and string taskIds
-      const testTaskIds = [12740, 12753, 12756, 123];
-      console.log("Sending request with taskIds:", testTaskIds);
+      // Example with mixed number and string recognitionIds
+      const testRecognitionIds = [11000, 11001, 11002, 11003, 11004];
+      console.log("Sending request with recognitionIds:", testRecognitionIds);
       const response = await axios.post('/api/getTransactionIds', 
-        { taskIds: testTaskIds },
+        { recognitionIds: testRecognitionIds },
         {
           headers: {
             'api_key': API_KEY
