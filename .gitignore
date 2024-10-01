@@ -42,3 +42,4 @@ next-env.d.ts
 /public/testData2.json
 /public/processedData.json
 /public/processedData2.json
+/public/reverseTransaction.json

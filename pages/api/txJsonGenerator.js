@@ -173,11 +173,9 @@ export default async function handler(req, res) {
     } else {
       // Process and insert data using the utility function
       const { insertedData, rawData, processedData } = await processAndInsertData(receivedData);
-
+      console.log('Processed data:', processedData);
       res.status(200).json({ 
-        message: 'Data validated, transformed, stored, and processed successfully',
-        processedData: processedData,
-        newRecognitionIds: newRecognitionIds
+        message: 'Data validated, transformed, stored, and processed successfully'
       });
     }
 

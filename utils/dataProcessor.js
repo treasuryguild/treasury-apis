@@ -1,8 +1,6 @@
 // utils/dataProcessor.js
 import supabase from '../lib/supabaseClient';
 
-const AGIX_USD_RATE = 0.4; // Hardcoded exchange rate, can be replaced with API call later
-
 let validTokens = new Map(); // Store valid tokens
 let projectWallets = new Map(); // Store project wallets
 
@@ -210,20 +208,45 @@ function splitStringIntoChunks(text, maxLength) {
   return chunks;
 }
 
-function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData) {
-  const contribution = {
+// Helper function to generate a unique key for each contribution
+function getContributionKey(task) {
+  return JSON.stringify({
+    name: task.taskName,
     taskCreator: task.groupName,
-    name: splitStringIntoChunks(task.taskName, 55),
     arrayMap: {
       label: task.taskLabels.split(','),
       subGroup: [task.subGroup],
       date: [task.date]
-    },
-    contributors: {}
-  };
+    }
+  });
+}
+
+function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData) {
+  const contributionKey = getContributionKey(task);
+  
+  if (!transformedData.metadata["674"].contributionMap) {
+    transformedData.metadata["674"].contributionMap = new Map();
+  }
+
+  let contribution;
+  if (transformedData.metadata["674"].contributionMap.has(contributionKey)) {
+    contribution = transformedData.metadata["674"].contributionMap.get(contributionKey);
+  } else {
+    contribution = {
+      taskCreator: task.groupName,
+      name: splitStringIntoChunks(task.taskName, 55),
+      arrayMap: {
+        label: task.taskLabels.split(','),
+        subGroup: [task.subGroup],
+        date: [task.date]
+      },
+      contributors: {}
+    };
+    transformedData.metadata["674"].contributionMap.set(contributionKey, contribution);
+  }
 
   const walletShortcode = task.walletAddress.slice(-6);
-  contribution.contributors[walletShortcode] = {};
+  contribution.contributors[walletShortcode] = contribution.contributors[walletShortcode] || {};
 
   for (const [token, amount] of Object.entries(task.tokenT)) {
     if (amount && amount !== "" && token.toUpperCase() !== "USD") {
@@ -231,11 +254,19 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
 
       updateOutputs(transformedData.outputs, task.walletAddress, tokenInfo, quantity);
 
-      contribution.contributors[walletShortcode][upperToken] = adjustedAmount.toString();
+      if (contribution.contributors[walletShortcode][upperToken]) {
+        contribution.contributors[walletShortcode][upperToken] = (parseFloat(contribution.contributors[walletShortcode][upperToken]) + adjustedAmount).toString();
+      } else {
+        contribution.contributors[walletShortcode][upperToken] = adjustedAmount.toString();
+      }
     }
   }
+}
 
-  transformedData.metadata["674"].contributions.push(contribution);
+// After processing all tasks, convert the Map back to an array
+function finalizeContributions(transformedData) {
+  transformedData.metadata["674"].contributions = Array.from(transformedData.metadata["674"].contributionMap.values());
+  delete transformedData.metadata["674"].contributionMap;
 }
 
 function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, tasks) {
@@ -415,6 +446,7 @@ export async function transformData(rawData) {
     processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData);
   }
 
+  finalizeContributions(transformedData);
   processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, rawData.tasks); // Pass tokenTotals to accumulate fees
   updateMetadataMessages(tokenTotals, transformedData, rawData.exchangeRates);
 
