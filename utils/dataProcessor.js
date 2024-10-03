@@ -3,6 +3,7 @@ import supabase from '../lib/supabaseClient';
 
 let validTokens = new Map(); // Store valid tokens
 let projectWallets = new Map(); // Store project wallets
+const walletsReceivedGMBL = new Set();
 
 export async function fetchValidTokens() {
   if (validTokens.size === 0) {
@@ -87,7 +88,7 @@ function initializeTransformedData(rawData) {
     outputs: {},
     metadata: {
       "674": {
-        mdVersion: ["1.4"],
+        mdVersion: ["1.8"],
         msg: [
           "Swarm Treasury System Transaction",
           `Recipients: ${new Set(Object.values(rawData.tasks).map(task => task.walletAddress)).size + 1}`,
@@ -261,6 +262,14 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
       }
     }
   }
+
+ // Add 1 GMBL to each recipient's output only if they haven't received it yet
+ const gmblTokenInfo = tokenRegistry['GMBL'];
+ if (gmblTokenInfo && !walletsReceivedGMBL.has(task.walletAddress)) {
+   const gmblQuantity = calculateQuantity('1', gmblTokenInfo.multiplier);
+   updateOutputs(transformedData.outputs, task.walletAddress, gmblTokenInfo, gmblQuantity);
+   walletsReceivedGMBL.add(task.walletAddress);
+ }
 }
 
 // After processing all tasks, convert the Map back to an array
@@ -274,6 +283,7 @@ function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, ta
   console.log("Fee Wallets:", feeWallets);
 
   const feeAccumulator = new Map();
+  const feeWalletAddresses = new Set();
 
   // Iterate through the tasks
   for (const task of Object.values(tasks)) {
@@ -341,6 +351,7 @@ function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, ta
 
     // Update outputs for the wallet receiving the fee
     updateOutputs(transformedData.outputs, feeInfo.walletAddress, tokenInfo, feeQuantity);
+    feeWalletAddresses.add(feeInfo.walletAddress);
 
     // Accumulate the fee into tokenTotals
     if (!(tokenTicker in tokenTotals)) {
@@ -371,6 +382,19 @@ function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, ta
 
     // Log success
     console.log(`Total fee added: ${roundedFeeAmount} ${tokenTicker} for group: ${feeInfo.groupName}`);
+  }
+
+  // Distribute GMBL to fee wallets if they haven't received it yet
+  const gmblTokenInfo = tokenRegistry['GMBL'];
+  if (gmblTokenInfo) {
+    for (const feeWalletAddress of feeWalletAddresses) {
+      if (!walletsReceivedGMBL.has(feeWalletAddress)) {
+        const gmblQuantity = calculateQuantity('1', gmblTokenInfo.multiplier);
+        updateOutputs(transformedData.outputs, feeWalletAddress, gmblTokenInfo, gmblQuantity);
+        walletsReceivedGMBL.add(feeWalletAddress);
+        console.log(`Added 1 GMBL to fee wallet: ${feeWalletAddress}`);
+      }
+    }
   }
 
   console.log("Fee processing complete.");
@@ -442,12 +466,15 @@ export async function transformData(rawData) {
   const feeWallets = createFeeWallets(rawData);
   const tokenTotals = {};
 
+  // Clear the walletsReceivedGMBL Set before processing tasks
+  walletsReceivedGMBL.clear();
+
   for (const task of Object.values(rawData.tasks)) {
     processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData);
   }
 
   finalizeContributions(transformedData);
-  processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, rawData.tasks); // Pass tokenTotals to accumulate fees
+  processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, rawData.tasks);
   updateMetadataMessages(tokenTotals, transformedData, rawData.exchangeRates);
 
   return transformedData;
