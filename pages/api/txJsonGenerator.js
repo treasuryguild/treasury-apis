@@ -17,7 +17,11 @@ async function validateData(data) {
 
   // Check if required fields are present
   if (!data.tokenRegistry || !data.tokenFee || !data.tasks) {
-    errors.push({ code: 'MISSING_REQUIRED_FIELDS', message: 'Missing required fields: tokenRegistry, tokenFee, or tasks' });
+    errors.push({ 
+      code: 'MISSING_REQUIRED_FIELDS', 
+      message: 'Missing required fields: tokenRegistry, tokenFee, or tasks',
+      recognitionIds: []
+    });
   }
 
   // Validate tokenRegistry
@@ -25,10 +29,18 @@ async function validateData(data) {
     const policyId = tokenInfo.policyId.toLowerCase();
     if (tokenInfo.tokenTicker.toUpperCase() === 'ADA') {
       if (policyId !== '' && policyId !== 'ada' && policyId !== 'lovelace') {
-        errors.push({ code: 'INVALID_ADA_POLICY_ID', message: `Invalid ADA policy ID: ${policyId}. Should be empty or 'ada'.` });
+        errors.push({ 
+          code: 'INVALID_ADA_POLICY_ID', 
+          message: `Invalid ADA policy ID: ${policyId}. Should be empty or 'ada'.`,
+          recognitionIds: []
+        });
       }
     } else if (!isValidToken(policyId, validTokens)) {
-      errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${tokenInfo.tokenTicker} (Policy ID: ${policyId}) in tokenRegistry` });
+      errors.push({ 
+        code: 'INVALID_TOKEN', 
+        message: `Invalid token ${tokenInfo.tokenTicker} (Policy ID: ${policyId}) in tokenRegistry`,
+        recognitionIds: []
+      });
     }
   }
 
@@ -41,13 +53,35 @@ async function validateData(data) {
 
   // Validate tasks
   if (data.tasks) {
+    const taskSet = new Map();
     for (const task of Object.values(data.tasks)) {
       if (!task.recognitionId) {
-        errors.push({ code: 'MISSING_TASK_ID', message: `Task is missing recognitionId` });
+        errors.push({ 
+          code: 'MISSING_RECOGNITION_ID', 
+          message: `Task is missing recognitionId`,
+          recognitionIds: []
+        });
       }
 
       if (!isValidWalletAddress(task.walletAddress)) {
-        errors.push({ code: 'INVALID_WALLET_ADDRESS', message: `Invalid wallet address for task ${task.recognitionId}` });
+        errors.push({ 
+          code: 'INVALID_WALLET_ADDRESS', 
+          message: `Invalid wallet address for task ${task.recognitionId}`,
+          recognitionIds: [task.recognitionId]
+        });
+      }
+
+      // Check for duplicate tasks
+      const taskKey = `${task.taskName}|${task.date}|${task.proofLink}|${task.walletOwner}`;
+      if (taskSet.has(taskKey)) {
+        const duplicateTask = taskSet.get(taskKey);
+        errors.push({ 
+          code: 'DUPLICATE_RECOGNITION', 
+          message: `Recognitions have the same name, date, walletOwner and prooflink`,
+          recognitionIds: [duplicateTask.recognitionId, task.recognitionId]
+        });
+      } else {
+        taskSet.set(taskKey, task);
       }
 
       // Validate token amounts
@@ -59,12 +93,20 @@ async function validateData(data) {
             console.log('Token:', token, 'Amount:', amount, 'Token Info:', tokenInfo);
             
             if (!tokenInfo) {
-              errors.push({ code: 'MISSING_TOKEN_INFO', message: `Missing token info for ${token} in task ${task.recognitionId}` });
+              errors.push({ 
+                code: 'MISSING_TOKEN_INFO', 
+                message: `Missing token info for ${token} in task ${task.recognitionId}`,
+                recognitionIds: [task.recognitionId]
+              });
             } else {
               const policyId = tokenInfo.policyId.toLowerCase();
               console.log(`Checking policy ID: ${policyId} for token ${upperToken}`);
               if (!isValidToken(policyId, validTokens)) {
-                errors.push({ code: 'INVALID_TOKEN', message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.recognitionId}` });
+                errors.push({ 
+                  code: 'INVALID_TOKEN', 
+                  message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.recognitionId}`,
+                  recognitionIds: [task.recognitionId]
+                });
               }
             }
           }
@@ -99,7 +141,11 @@ export default async function handler(req, res) {
   const apiKey = req.headers['api_key'];
   if (!apiKey || apiKey !== API_KEY) {
     return res.status(401).json({ 
-      errors: [{ code: 'UNAUTHORIZED', message: 'Invalid or missing API key' }],
+      errors: [{ 
+        code: 'UNAUTHORIZED', 
+        message: 'Invalid or missing API key',
+        recognitionIds: []
+      }],
       message: 'Unauthorized: Invalid or missing API key'
     });
   }
@@ -107,7 +153,11 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ 
-      errors: [{ code: 'METHOD_NOT_ALLOWED', message: `Method ${req.method} Not Allowed` }],
+      errors: [{ 
+        code: 'METHOD_NOT_ALLOWED', 
+        message: `Method ${req.method} Not Allowed`,
+        recognitionIds: []
+      }],
       message: `Method ${req.method} Not Allowed`
     });
   }
@@ -121,9 +171,17 @@ export default async function handler(req, res) {
       try {
         receivedData = JSON.parse(receivedData);
       } catch (parseError) {
-        await insertRawDataWithErrors(req.body, [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }]);
+        await insertRawDataWithErrors(req.body, [{
+          code: 'INVALID_JSON',
+          message: 'Invalid JSON string',
+          recognitionIds: []
+        }]);
         return res.status(400).json({ 
-          errors: [{ code: 'INVALID_JSON', message: 'Invalid JSON string' }],
+          errors: [{
+            code: 'INVALID_JSON',
+            message: 'Invalid JSON string',
+            recognitionIds: []
+          }],
           message: 'Bad Request: Invalid JSON string'
         });
       }
@@ -131,9 +189,17 @@ export default async function handler(req, res) {
 
     // Check if receivedData is an object
     if (typeof receivedData !== 'object' || receivedData === null) {
-      await insertRawDataWithErrors(receivedData, [{ code: 'INVALID_DATA_FORMAT', message: 'Invalid data format. Expected an object or a valid JSON string.' }]);
+      await insertRawDataWithErrors(receivedData, [{
+        code: 'INVALID_DATA_FORMAT',
+        message: 'Invalid data format. Expected an object or a valid JSON string.',
+        recognitionIds: []
+      }]);
       return res.status(400).json({ 
-        errors: [{ code: 'INVALID_DATA_FORMAT', message: 'Invalid data format. Expected an object or a valid JSON string.' }],
+        errors: [{
+          code: 'INVALID_DATA_FORMAT',
+          message: 'Invalid data format. Expected an object or a valid JSON string.',
+          recognitionIds: []
+        }],
         message: 'Bad Request: Invalid data format. Expected an object or a valid JSON string.'
       });
     }
@@ -141,10 +207,11 @@ export default async function handler(req, res) {
     // Check for duplicate recognitionIds
     const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(receivedData);
     if (duplicateRecognitionIds.length > 0) {
-      const errors = duplicateRecognitionIds.map(recognitionId => ({ 
+      const errors = [{ 
         code: 'DUPLICATE_RECOGNITION_ID', 
-        message: `Duplicate recognitionId detected: ${recognitionId}` 
-      }));
+        message: `Recognition IDs were already used in previous transactions`,
+        recognitionIds: duplicateRecognitionIds 
+      }];
       await insertRawDataWithErrors(receivedData, errors);
       return res.status(409).json({ 
         errors: errors,
