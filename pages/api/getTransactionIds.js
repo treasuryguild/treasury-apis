@@ -18,7 +18,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { recognitionIds } = req.body;
+    let body = req.body;
+
+    // Parse the body if it's a string
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        return res.status(400).json({ error: 'Invalid input: Body must be valid JSON' });
+      }
+    }
+
+    const { recognitionIds } = body;
 
     if (!Array.isArray(recognitionIds) || recognitionIds.length === 0) {
       return res.status(400).json({ error: 'Invalid input: recognitionIds must be a non-empty array' });
@@ -27,7 +38,7 @@ export default async function handler(req, res) {
     // Convert all recognitionIds to strings
     const normalizedRecognitionIds = recognitionIds.map(id => id.toString());
 
-    // Query the database for the latest 5 entries with transaction_ids
+    // Query the database for the latest 10 entries with transaction_ids
     const { data, error } = await supabase
       .from('tx_json_generator_data')
       .select('recognition_ids, transaction_id')
