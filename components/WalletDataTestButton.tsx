@@ -5,7 +5,7 @@ import axios from 'axios';
 const WalletDataTestButton: React.FC = () => {
   const testWalletData = async () => {
     try {
-      const response = await axios.get('/api/getWallets', {
+      const response = await axios.get('/api/getGWallets', {
         headers: {
           'api_key': process.env.NEXT_PUBLIC_SERVER_API_KEY
         }
