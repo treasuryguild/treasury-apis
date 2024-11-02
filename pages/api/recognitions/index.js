@@ -2,19 +2,40 @@
 import supabase from '../../../lib/supabaseClient';
 import { 
   transformTransactionData, 
-  filterRecognitions, 
-  paginateData 
+  filterRecognitions
 } from '../../../utils/transformRecognitions';
+
+// Add API key validation middleware
+const validateApiKey = (req) => {
+  const apiKey = req.headers['x-api-key'];
+  // Replace this with your actual API key validation logic
+  const validApiKey = process.env.SERVER_API_KEY;
+  
+  if (!apiKey || apiKey !== validApiKey) {
+    throw new Error('Invalid API key');
+  }
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' })
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
   try {
+    // Validate API key
+    validateApiKey(req);
+
+    // Get project_id from headers
+    const projectId = req.headers['x-project-id'];
+    
+    if (!projectId) {
+      return res.status(400).json({ 
+        error: 'Bad Request',
+        message: 'Project ID is required in headers (x-project-id)'
+      });
+    }
+
     const {
-      page = 1,
-      limit = 200,
       startDate,
       endDate,
       subgroup,
@@ -22,10 +43,23 @@ export default async function handler(req, res) {
       task_name,
     } = req.query
 
+    // Enhanced logging
+    console.log('Request Details:', {
+      projectId,
+      headers: req.headers,
+      queryParams: {
+        startDate,
+        endDate,
+        subgroup,
+        contributor_id,
+        task_name
+      }
+    });
+
     let query = supabase
       .from('transactions')
       .select('*')
-      .eq('project_id', '722294ef-c9e4-4b2f-8779-a3f7caf4f28d')
+      .eq('project_id', projectId)
 
     const { data: rawData, error } = await query.order('transaction_date', { ascending: false })
 
@@ -40,27 +74,48 @@ export default async function handler(req, res) {
     // Get all recognitions
     const allRecognitions = transformedData.flatMap(transaction => transaction.recognitions);
     
+    // Enhanced logging
+    console.log('Total recognitions before filtering:', allRecognitions.length);
+    if (contributor_id) {
+      const contributorRecognitions = allRecognitions.filter(r => r.contributor_id === contributor_id);
+      console.log('Found recognitions for contributor_id before filtering:', {
+        contributor_id,
+        count: contributorRecognitions.length,
+        sample: contributorRecognitions.slice(0, 2)
+      });
+    }
+
     // Apply filters
     const filteredRecognitions = filterRecognitions(allRecognitions, {
+      startDate,
+      endDate,
       subgroup,
       contributor_id,
       task_name
     });
 
-    // Apply pagination
-    const paginatedRecognitions = paginateData(filteredRecognitions, page, limit);
+    // Enhanced logging after filtering
+    console.log('Filtered recognitions:', {
+      total: filteredRecognitions.length,
+      sampleData: filteredRecognitions.slice(0, 2)
+    });
 
     // Get the transaction data for the filtered recognitions
-    const relevantTransactionIds = new Set(paginatedRecognitions.map(r => r.tx_id));
+    const relevantTransactionIds = new Set(filteredRecognitions.map(r => r.tx_id));
     const filteredData = transformedData.filter(t => relevantTransactionIds.has(t.tx_id));
 
     return res.status(200).json({
-      data: filteredData,
-      recognitions: paginatedRecognitions,
+      //data: filteredData,
+      recognitions: filteredRecognitions,
       metadata: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: filteredRecognitions.length
+        total: filteredRecognitions.length,
+        projectId,
+        appliedFilters: {
+          contributor_id: contributor_id || null,
+          subgroup: subgroup || null,
+          task_name: task_name || null,
+          dateRange: startDate || endDate ? { startDate, endDate } : null
+        }
       }
     });
   } catch (error) {
@@ -69,6 +124,14 @@ export default async function handler(req, res) {
       code: error.code,
       details: error.details
     });
+    
+    // Handle specific errors
+    if (error.message === 'Invalid API key') {
+      return res.status(401).json({ 
+        error: 'Unauthorized',
+        message: 'Invalid API key'
+      });
+    }
     
     return res.status(500).json({ 
       error: 'Internal server error',

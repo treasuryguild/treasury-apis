@@ -55,40 +55,71 @@ export function transformTransactionData(rawData) {
 }
 
 /**
+ * Parses a date string in dd.mm.yy format to a Date object
+ * @param {string} dateStr - Date string in dd.mm.yy format
+ * @returns {Date} Parsed date object
+ */
+function parseDateString(dateStr) {
+  if (!dateStr) return null;
+  const [day, month, year] = dateStr.split('.');
+  // Assuming 20xx for year
+  return new Date(`20${year}-${month}-${day}`);
+}
+
+/**
  * Filters recognitions based on query parameters
  * @param {Array} recognitions - Array of recognition records
  * @param {Object} filters - Filter criteria
  * @returns {Array} Filtered recognition records
  */
-export function filterRecognitions(recognitions, { subgroup, contributor_id, task_name } = {}) {
+export function filterRecognitions(recognitions, { startDate, endDate, subgroup, contributor_id, task_name } = {}) {
+  // Add debug logging to see what's happening with contributor IDs
+  if (contributor_id) {
+    console.log('Filtering for contributor_id:', contributor_id);
+    const uniqueContributorIds = new Set(recognitions.map(r => r.contributor_id));
+    console.log('Available contributor_ids:', Array.from(uniqueContributorIds));
+  }
+
   return recognitions.filter(recognition => {
-    // Filter by subgroup
+    // Log individual recognition for debugging if contributor_id is provided
+    if (contributor_id) {
+      console.log('Checking recognition:', {
+        contributor_id: recognition.contributor_id,
+        matches: recognition.contributor_id === contributor_id
+      });
+    }
+
+    // Filter by date range
+    if (startDate || endDate) {
+      const recognitionDate = parseDateString(recognition.date);
+      if (!recognitionDate) return false;
+
+      if (startDate) {
+        const startDateObj = parseDateString(startDate);
+        if (startDateObj && recognitionDate < startDateObj) return false;
+      }
+
+      if (endDate) {
+        const endDateObj = parseDateString(endDate);
+        if (endDateObj && recognitionDate > endDateObj) return false;
+      }
+    }
+
+    // Filter by subgroup (case-insensitive)
     if (subgroup && recognition.subGroup?.toLowerCase() !== subgroup.toLowerCase()) {
       return false;
     }
 
-    // Filter by contributor_id
+    // Filter by contributor_id (simpler exact matching)
     if (contributor_id && recognition.contributor_id !== contributor_id) {
       return false;
     }
 
-    // Filter by task name
+    // Filter by task name (case-insensitive partial match)
     if (task_name && !recognition.task_name.toLowerCase().includes(task_name.toLowerCase())) {
       return false;
     }
 
     return true;
   });
-}
-
-/**
- * Applies pagination to an array of records
- * @param {Array} data - Array of records to paginate
- * @param {number} page - Page number
- * @param {number} limit - Number of items per page
- * @returns {Array} Paginated records
- */
-export function paginateData(data, page = 1, limit = 200) {
-  const offset = (page - 1) * limit;
-  return data.slice(offset, offset + parseInt(limit));
 }
