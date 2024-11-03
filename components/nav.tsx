@@ -11,6 +11,9 @@ const Nav = () => {
           <Link href="/" className="navitems">
             Home
           </Link>
+          <Link href="/exchangeRates" className="navitems">
+            Exchange Rates
+          </Link>
           <Link href="/other" className="navitems">
             Other
           </Link>
