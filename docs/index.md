@@ -11,10 +11,10 @@ Welcome to the API documentation. Here you'll find comprehensive guides and docu
 
 ## Quick Navigation
 
-- [Contributors API](/api/contributors)
-- [Wallets API](/api/wallets)
-- [Recognitions API](/api/recognitions)
+- [Contributors API](/treasury-apis/api/contributors)
+- [Wallets API](/treasury-apis/api/wallets)
+- [Recognitions API](/treasury-apis/api/recognitions)
 
 ## Getting Started
 
-See our [Getting Started Guide](/guides/getting-started) to begin using our APIs.
+See our [Getting Started Guide](/treasury-apis/guides/getting-started) to begin using our APIs.

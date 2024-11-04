@@ -1,46 +1,44 @@
-# SingularityNET Ambassador Recognition API Documentation
+# Recognition API Documentation
 
-## Overview
-This API provides access to recognition data for the SingularityNET Ambassador program. It allows retrieving and filtering recognition records based on various parameters.
-
-## Base URL
-`/api/recognitions`
-
-## Authentication
-All requests must include an API key in the headers for authentication.
-
-### Required Headers
-- `x-api-key`: Your API authentication key
-- `x-project-id`: The project identifier for SNET Ambassador wallet recognitions
-  - Use `722294ef-c9e4-4b2f-8779-a3f7caf4f28d` for accessing Ambassador program data
-
-## Endpoints
-
-### GET /api/recognitions
-
-Retrieves recognition records with optional filtering.
-
-#### Query Parameters
-
-| Parameter | Type | Description | Format | Example |
-|-----------|------|-------------|---------|---------|
-| startDate | string | Start date for filtering records | dd.mm.yy | "01.01.24" |
-| endDate | string | End date for filtering records | dd.mm.yy | "31.01.24" |
-| subgroup | string | Filter by specific subgroup | string | "marketing" |
-| contributor_id | string | Filter by specific contributor | string | "contributor123" |
-| task_name | string | Filter by task name (partial match supported) | string | "community" |
-
-#### Example Request
-
-```bash
-curl -X GET 'https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.24&endDate=31.01.24' \
--H 'x-api-key: your-api-key' \
--H 'x-project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+## Endpoint
+```
+GET /api/recognitions
 ```
 
-#### Response Format
+## Description
+This endpoint provides access to recognition data from the Treasury Guild Database. It allows retrieving and filtering recognition records based on various parameters.
 
-```javascript
+## Authentication
+The API requires authentication using specific headers.
+
+### Headers
+- `api-key`: Your API authentication key (Required - Contact andretreasuryguild for access)
+- `project-id`: The project identifier (Required)
+  - Use `722294ef-c9e4-4b2f-8779-a3f7caf4f28d` for SNet Ambassador program data
+
+Example:
+```
+api-key: your_api_key_here
+project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d
+```
+
+## Query Parameters
+
+| Parameter | Description | Format | Example |
+|-----------|-------------|---------|---------|
+| startDate | Start date for filtering records | dd.mm.yy | "01.01.24" |
+| endDate | End date for filtering records | dd.mm.yy | "31.01.24" |
+| subgroup | Filter by specific subgroup | string | "treasury guild" |
+| contributor_id | Filter by specific contributor | string | "7xcueh" |
+| task_name | Filter by task name | string | "Treasury Operator Rewards" |
+
+## Response Format
+
+### Success Response (200 OK)
+Returns an object containing recognitions array and metadata:
+
+Example Response:
+```json
 {
   "recognitions": [
     {
@@ -55,73 +53,108 @@ curl -X GET 'https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.
       "label": "string",
       "subGroup": "string",
       "taskCreator": "string",
-      "amounts": object,
-      "exchange_rate": number
+      "amounts": {},
+      "exchange_rate": 0
     }
   ],
   "metadata": {
-    "total": number,
+    "total": 0,
     "projectId": "string",
     "appliedFilters": {
-      "contributor_id": string | null,
-      "subgroup": string | null,
-      "task_name": string | null,
+      "contributor_id": null,
+      "subgroup": null,
+      "task_name": null,
       "dateRange": {
-        "startDate": string | null,
-        "endDate": string | null
+        "startDate": null,
+        "endDate": null
       }
     }
   }
 }
 ```
 
-## Error Responses
+### Error Responses
 
-| Status Code | Description | Response Body |
-|-------------|-------------|---------------|
-| 400 | Missing project ID | `{ "error": "Bad Request", "message": "Project ID is required in headers (x-project-id)" }` |
-| 401 | Invalid API key | `{ "error": "Unauthorized", "message": "Invalid API key" }` |
-| 405 | Method not allowed | `{ "message": "Method not allowed" }` |
-| 500 | Server error | `{ "error": "Internal server error", "details": {...} }` |
+#### 400 Bad Request
+```json
+{
+  "error": "Bad Request",
+  "message": "Project ID is required in headers (x-project-id)"
+}
+```
+Returned when project ID is missing.
 
-## Usage Examples
+#### 401 Unauthorized
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid API key"
+}
+```
+Returned when the API key is invalid.
 
-### 1. Get All Recognition Records for a Date Range
+#### 405 Method Not Allowed
+```json
+{
+  "message": "Method not allowed"
+}
+```
+Returned when using any HTTP method other than GET.
 
+#### 500 Internal Server Error
+```json
+{
+  "error": "Internal server error",
+  "details": {}
+}
+```
+Returned when there's a server-side error.
+
+## Example Usage
+
+### cURL
 ```bash
-curl -X GET 'https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.24&endDate=31.01.24' \
--H 'x-api-key: your-api-key' \
--H 'x-project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+curl -X GET \
+  'https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.24&endDate=31.01.24' \
+  -H 'api-key: your_api_key_here' \
+  -H 'project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
 ```
 
-### 2. Filter Records by Contributor and Subgroup
+### JavaScript (Fetch)
+```javascript
+const response = await fetch('https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.24&endDate=31.01.24', {
+  method: 'GET',
+  headers: {
+    'api-key': 'your_api_key_here',
+    'project-id': '722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+  }
+});
 
-```bash
-curl -X GET 'https://treasury-apis.netlify.app/api/recognitions?contributor_id=ambassador123&subgroup=marketing' \
--H 'x-api-key: your-api-key' \
--H 'x-project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+const data = await response.json();
 ```
 
-### 3. Search for Specific Tasks
+### Python (Requests)
+```python
+import requests
 
-```bash
-curl -X GET 'https://treasury-apis.netlify.app/api/recognitions?task_name=community' \
--H 'x-api-key: your-api-key' \
--H 'x-project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+headers = {
+    'api-key': 'your_api_key_here',
+    'project-id': '722294ef-c9e4-4b2f-8779-a3f7caf4f28d'
+}
+
+response = requests.get(
+    'https://treasury-apis.netlify.app/api/recognitions?startDate=01.01.24&endDate=31.01.24',
+    headers=headers
+)
+data = response.json()
 ```
 
 ## Best Practices
-
-1. Always include both the API key and project ID in headers
-2. Use date filters to limit the amount of data returned
-3. Combine filters to get more specific results
-4. Monitor the metadata in responses for useful information about your queries
-
-## Rate Limiting and Usage Guidelines
-
-- Include appropriate error handling in your applications
+- Always include both the API key and project ID in headers
+- Use date filters to limit the amount of data returned
+- Combine filters to get more specific results
+- Monitor the metadata in responses for useful information about your queries
 - Cache responses when possible to avoid unnecessary API calls
-- Consider implementing pagination in your applications for large data sets
 
 ## Support
-If you encounter any issues or need assistance, please reach out to the SNET Ambassador program support team.
+For API access and support, please contact andretreasuryguild in Discord
