@@ -8,8 +8,8 @@ markdown: kramdown
 remote_theme: just-the-docs/just-the-docs
 
 # Set the base URL to match your GitHub Pages URL
-baseurl: "/your-repo-name"  # Replace with your repository name
-url: "https://yourusername.github.io"
+baseurl: "/treasury-apis"  # Replace with your repository name
+url: "https://treasuryguild.github.io"
 
 # Enable or disable the site search
 search_enabled: true
@@ -17,9 +17,9 @@ search_enabled: true
 # Aux links for the upper right navigation
 aux_links:
   "View App":
-    - "https://your-app-url.netlify.app"
+    - "https://treasury-apis.netlify.app/"
   "GitHub":
-    - "https://github.com/yourusername/your-repo"
+    - "https://github.com/treasuryguild/treasury-apis"
 
 # Color scheme
 color_scheme: dark
