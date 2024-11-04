@@ -7,10 +7,12 @@ const PROJECT_ID = '722294ef-c9e4-4b2f-8779-a3f7caf4f28d';
 
 const QueryTester: React.FC = () => {
   const [results, setResults] = useState<ApiResponse | null>(null);
+  const [contributorsData, setContributorsData] = useState<any>(null);
+  const [walletsData, setWalletsData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async (queryParams: string = ''): Promise<void> => {
+  const fetchData = async (queryParams: string = '', endpoint: string = 'recognitions'): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -21,21 +23,53 @@ const QueryTester: React.FC = () => {
     }
 
     try {
-      const headers: HeadersInit = {
-        'x-api-key': API_KEY,
-        'x-project-id': PROJECT_ID
-      };
+      let headers: HeadersInit = {};
+      let url = '';
 
-      const response = await fetch(`/api/recognitions${queryParams}`, {
-        headers
-      });
+      // Set up headers and URL based on endpoint
+      switch(endpoint) {
+        case 'recognitions':
+          headers = {
+            'x-api-key': API_KEY,
+            'x-project-id': PROJECT_ID
+          };
+          url = `/api/recognitions${queryParams}`;
+          break;
+        case 'contributors':
+        case 'gwallets':
+          headers = {
+            'api_key': API_KEY
+          };
+          url = endpoint === 'contributors' ? '/api/contributors' : '/api/getGWallets';
+          break;
+      }
+
+      const response = await fetch(url, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data: ApiResponse = await response.json();
-      setResults(data);
+      const data = await response.json();
+      
+      // Set data based on endpoint
+      switch(endpoint) {
+        case 'recognitions':
+          setResults(data);
+          setContributorsData(null);
+          setWalletsData(null);
+          break;
+        case 'contributors':
+          setResults(null);
+          setContributorsData(data);
+          setWalletsData(null);
+          break;
+        case 'gwallets':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(data);
+          break;
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -46,27 +80,43 @@ const QueryTester: React.FC = () => {
   const queries: QueryConfig[] = [
     {
       name: 'All Recognitions',
-      query: ''
+      query: '',
+      endpoint: 'recognitions'
     },
     {
       name: 'Filter by Contributor',
-      query: '?contributor_id=jnaxjp'
+      query: '?contributor_id=jnaxjp',
+      endpoint: 'recognitions'
     },
     {
       name: 'Filter by Date Range',
-      query: '?startDate=01.01.23&endDate=31.12.23'
+      query: '?startDate=01.01.23&endDate=31.12.23',
+      endpoint: 'recognitions'
     },
     {
       name: 'Filter by Subgroup',
-      query: '?subgroup=treasury guild'
+      query: '?subgroup=treasury guild',
+      endpoint: 'recognitions'
     },
     {
       name: 'Filter by Task Name',
-      query: '?task_name=Treasury JSON Generator API'
+      query: '?task_name=Treasury JSON Generator API',
+      endpoint: 'recognitions'
     },
     {
       name: 'Combined Filters',
-      query: '?contributor_id=jnaxjp&startDate=01.01.23&endDate=31.12.23&subgroup=treasury guild'
+      query: '?contributor_id=jnaxjp&startDate=01.01.23&endDate=31.12.23&subgroup=treasury guild',
+      endpoint: 'recognitions'
+    },
+    {
+      name: 'Get All Contributors',
+      query: '',
+      endpoint: 'contributors'
+    },
+    {
+      name: 'Get All Wallet Addresses',
+      query: '',
+      endpoint: 'gwallets'
     }
   ];
 
@@ -83,7 +133,7 @@ const QueryTester: React.FC = () => {
         {queries.map((q, index) => (
           <button 
             key={index}
-            onClick={() => fetchData(q.query)}
+            onClick={() => fetchData(q.query, q.endpoint)}
             disabled={loading}
             style={{
               padding: '10px',
@@ -126,7 +176,7 @@ const QueryTester: React.FC = () => {
           backgroundColor: 'black',
           color: 'white'
         }}>
-          <h2 style={{ marginBottom: '10px' }}>Results</h2>
+          <h2 style={{ marginBottom: '10px' }}>Recognition Results</h2>
           
           <div style={{ marginBottom: '20px' }}>
             <h3>Metadata:</h3>
@@ -155,6 +205,58 @@ const QueryTester: React.FC = () => {
                 {JSON.stringify(results.recognitions.slice(0, 5), null, 2)}
               </pre>
             </div>
+          </div>
+        </div>
+      )}
+
+      {contributorsData && (
+        <div style={{ 
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '20px',
+          backgroundColor: 'black',
+          color: 'white',
+          marginTop: '20px'
+        }}>
+          <h2 style={{ marginBottom: '10px' }}>Contributors Results</h2>
+          <h3>Total Contributors: {contributorsData.length}</h3>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflow: 'auto',
+            backgroundColor: 'black',
+            padding: '10px',
+            borderRadius: '4px',
+            color: 'white'
+          }}>
+            <pre>
+              {JSON.stringify(contributorsData.slice(0, 5), null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {walletsData && (
+        <div style={{ 
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '20px',
+          backgroundColor: 'black',
+          color: 'white',
+          marginTop: '20px'
+        }}>
+          <h2 style={{ marginBottom: '10px' }}>Wallet Addresses Results</h2>
+          <h3>Total Wallets: {walletsData.length}</h3>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflow: 'auto',
+            backgroundColor: 'black',
+            padding: '10px',
+            borderRadius: '4px',
+            color: 'white'
+          }}>
+            <pre>
+              {JSON.stringify(walletsData.slice(0, 5), null, 2)}
+            </pre>
           </div>
         </div>
       )}
