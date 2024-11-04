@@ -30,8 +30,8 @@ const QueryTester: React.FC = () => {
       switch(endpoint) {
         case 'recognitions':
           headers = {
-            'x-api-key': API_KEY,
-            'x-project-id': PROJECT_ID
+            'api-key': API_KEY,
+            'project-id': PROJECT_ID
           };
           url = `/api/recognitions${queryParams}`;
           break;

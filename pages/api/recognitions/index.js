@@ -7,7 +7,7 @@ import {
 
 // Add API key validation middleware
 const validateApiKey = (req) => {
-  const apiKey = req.headers['x-api-key'];
+  const apiKey = req.headers['api-key'];
   // Replace this with your actual API key validation logic
   const validApiKey = process.env.SERVER_API_KEY;
   
@@ -26,12 +26,12 @@ export default async function handler(req, res) {
     validateApiKey(req);
 
     // Get project_id from headers
-    const projectId = req.headers['x-project-id'];
+    const projectId = req.headers['project-id'];
     
     if (!projectId) {
       return res.status(400).json({ 
         error: 'Bad Request',
-        message: 'Project ID is required in headers (x-project-id)'
+        message: 'Project ID is required in headers (project-id)'
       });
     }
 
@@ -100,9 +100,9 @@ export default async function handler(req, res) {
       sampleData: filteredRecognitions.slice(0, 2)
     });
 
-    // Get the transaction data for the filtered recognitions
-    const relevantTransactionIds = new Set(filteredRecognitions.map(r => r.tx_id));
-    const filteredData = transformedData.filter(t => relevantTransactionIds.has(t.tx_id));
+    // Get the transaction data for the filtered recognitions (Testing purposes)
+    //const relevantTransactionIds = new Set(filteredRecognitions.map(r => r.tx_id));
+    //const filteredData = transformedData.filter(t => relevantTransactionIds.has(t.tx_id));
 
     return res.status(200).json({
       //data: filteredData,

@@ -27,8 +27,8 @@ headers: {
 
 // For Recognitions API
 headers: {
-  'x-api-key': 'your_server_api_key',
-  'x-project-id': 'your_project_id'
+  'api-key': 'your_server_api_key',
+  'project-id': 'your_project_id'
 }
 ```
 
@@ -78,8 +78,8 @@ Query recognitions with filters:
 const response = await fetch('https://treasury-apis.netlify.app/api/recognitions?contributor_id=jnaxjp&startDate=01.01.23&endDate=31.12.23', {
   method: 'GET',
   headers: {
-    'x-api-key': 'your_server_api_key',
-    'x-project-id': 'your_project_id'
+    'api-key': 'your_server_api_key',
+    'project-id': 'your_project_id'
   }
 });
 
@@ -106,7 +106,7 @@ Example:
 ```json
 [
   {
-    "contributor_id": "123",
+    "contributor_id": "7xcueh",
     "wallet": "addr1qxxxxxxxxx"
   }
 ]
@@ -185,16 +185,15 @@ your-domain.com/query-tester
 
 ## Next Steps
 
-- Explore the [Contributors API](/docs/api/contributors) documentation
-- Learn about the [Wallets API](/docs/api/wallets)
-- Check out the [Recognitions API](/docs/api/recognitions)
-- View [Example Projects](/docs/examples)
+- Explore the [Contributors API](/treasury-apis/api/contributors) documentation
+- Learn about the [Wallets API](/treasury-apis/api/wallets)
+- Check out the [Recognitions API](/treasury-apis/api/recognitions)
 
 ## Need Help?
 
 If you need assistance:
-- Check our [FAQ section](/docs/faq)
-- Review [Common Issues](/docs/troubleshooting)
-- Contact our support team
+- Check our [FAQ section](treasury-apis/faq)
+- Review [Common Issues](treasury-apis/troubleshooting)
+- [Contact our support team](/treasury-apis/contact)
 
 Remember to replace placeholder values (your-domain.com, your_server_api_key) with your actual values when making requests.
