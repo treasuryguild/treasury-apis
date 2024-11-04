@@ -67,13 +67,13 @@ Returned when there's a server-side error.
 ### cURL
 ```bash
 curl -X GET \
-  'https://your-domain.com/api/contributors' \
+  'https://treasury-apis.netlify.app/api/contributors' \
   -H 'api_key: your_api_key_here'
 ```
 
 ### JavaScript (Fetch)
 ```javascript
-const response = await fetch('https://your-domain.com/api/contributors', {
+const response = await fetch('https://treasury-apis.netlify.app/api/contributors', {
   method: 'GET',
   headers: {
     'api_key': 'your_api_key_here'
@@ -91,6 +91,6 @@ headers = {
     'api_key': 'your_api_key_here'
 }
 
-response = requests.get('https://your-domain.com/api/contributors', headers=headers)
+response = requests.get('https://treasury-apis.netlify.app/api/contributors', headers=headers)
 data = response.json()
 ```
