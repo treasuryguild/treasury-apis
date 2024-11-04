@@ -1,0 +1,50 @@
+# .github/workflows/deploy-docs.yml
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'  # Only trigger when docs folder changes
+      - '.github/workflows/deploy-docs.yml'
+
+jobs:
+  deploy-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v2
+      
+      - uses: actions/configure-pages@v2
+        
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1'
+          bundler-cache: true
+          
+      - name: Setup Jekyll
+        working-directory: docs  # Specify the docs directory
+        run: |
+          gem install bundler
+          bundle init
+          bundle add jekyll github-pages just-the-docs
+          bundle install
+          
+      - name: Build with Jekyll
+        working-directory: docs  # Specify the docs directory
+        run: bundle exec jekyll build --destination ../docs-build
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs-build  # Specify the build output directory
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
