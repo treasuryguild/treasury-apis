@@ -192,8 +192,8 @@ your-domain.com/query-tester
 ## Need Help?
 
 If you need assistance:
-- Check our [FAQ section](treasury-apis/faq)
-- Review [Common Issues](treasury-apis/troubleshooting)
+- Check our [FAQ section](/treasury-apis/faq)
+- Review [Common Issues](/treasury-apis/troubleshooting)
 - [Contact our support team](/treasury-apis/contact)
 
 Remember to replace placeholder values (your-domain.com, your_server_api_key) with your actual values when making requests.
