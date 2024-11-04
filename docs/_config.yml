@@ -1,5 +1,5 @@
 # docs/_config.yml
-title: Your Project Documentation
+title: Treasury Guild API Documentation
 description: API Documentation and Guides
 theme: just-the-docs
 
@@ -16,8 +16,6 @@ search_enabled: true
 
 # Aux links for the upper right navigation
 aux_links:
-  "View App":
-    - "https://treasury-apis.netlify.app/"
   "GitHub":
     - "https://github.com/treasuryguild/treasury-apis"
 
