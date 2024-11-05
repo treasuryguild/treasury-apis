@@ -37,7 +37,7 @@ Currently, our APIs return all results in a single response. We recommend using 
 For security reasons, we recommend making API calls from your backend server to protect your API key.
 
 ### Why are some wallet addresses filtered out?
-The Wallets API filters addresses to ensure they:
+The Wallet Collector API filters addresses to ensure they:
 - Start with "addr"
 - Are at least 55 characters long
 - Have associated Discord handles

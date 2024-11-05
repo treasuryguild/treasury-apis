@@ -40,7 +40,7 @@ Here are some quick examples to get you started with each API:
 
 ### 1. Contributors API
 
-Fetch all contributors:
+Fetch all contributors (Contributor id and wallet address):
 
 ```javascript
 // Using fetch
@@ -56,7 +56,7 @@ const contributors = await response.json();
 
 ### 2. Wallets API
 
-Fetch all wallet addresses:
+Fetch all wallet addresses from Wallet Collector Google Form:
 
 ```javascript
 // Using axios
@@ -126,14 +126,36 @@ Example:
 ### Recognitions API Response
 ```json
 {
-  "metadata": {
-    // metadata information
-  },
   "recognitions": [
     {
-      // recognition data
+      "transaction_hash": "string",
+      "transaction_timestamp": "string",
+      "tx_id": "string",
+      "contribution_id": "string",
+      "created_at": "string",
+      "contributor_id": "string",
+      "task_name": "string",
+      "date": "string",
+      "label": "string",
+      "subGroup": "string",
+      "taskCreator": "string",
+      "amounts": {},
+      "exchange_rate": 0
     }
-  ]
+  ],
+  "metadata": {
+    "total": 0,
+    "projectId": "string",
+    "appliedFilters": {
+      "contributor_id": null,
+      "subgroup": null,
+      "task_name": null,
+      "dateRange": {
+        "startDate": null,
+        "endDate": null
+      }
+    }
+  }
 }
 ```
 
@@ -159,14 +181,6 @@ Example error response:
 ## Rate Limiting
 
 Currently, there are no strict rate limits in place, but please be mindful of your request frequency to ensure optimal service for all users.
-
-## Testing Tools
-
-We provide a Query Tester component that allows you to test different API endpoints and queries directly from our interface. You can find it at:
-
-```
-your-domain.com/query-tester
-```
 
 ## Best Practices
 

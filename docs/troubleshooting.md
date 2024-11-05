@@ -31,7 +31,6 @@ nav_order: 7
 1. Check date format (DD.MM.YY)
 2. Verify contributor_id exists
 3. Ensure subgroup name is exact match
-4. Confirm wallet address format
 
 ### Incorrect Data Format
 **Problem**: Data not in expected format
