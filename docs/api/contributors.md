@@ -29,15 +29,15 @@ api_key: your_api_key_here
 
 ### Success Response (200 OK)
 Returns an array of objects containing:
-- `contributor_id`: Unique identifier for the contributor
+- `contributor_id`: Unique identifier for the contributor (Last 6 digits of their wallet address)
 - `wallet`: Contributor's wallet address
 
 Example Response:
 ```json
 [
   {
-    "contributor_id": "123",
-    "wallet": "addr1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    "contributor_id": "7xcueh",
+    "wallet": "addr1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx7xcueh"
   }
 ]
 ```
