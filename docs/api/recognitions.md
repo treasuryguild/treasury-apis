@@ -50,8 +50,9 @@ Example Response:
     {
       "transaction_hash": "string",
       "transaction_timestamp": "string",
+      "tx_type": "string",
       "tx_id": "string",
-      "contribution_id": "string",
+      "task_id": "string",
       "created_at": "string",
       "contributor_id": "string",
       "task_name": "string",
