@@ -128,6 +128,7 @@ Example:
 {
   "recognitions": [
     {
+      "recognition_id": "string",
       "transaction_hash": "string",
       "transaction_timestamp": "string",
       "tx_type": "string",

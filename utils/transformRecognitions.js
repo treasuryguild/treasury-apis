@@ -1,6 +1,40 @@
 // utils/transformRecognitions.js
 
 /**
+ * Creates a 6-character hash from task name and date
+ * @param {string} taskName - The name of the task
+ * @param {string} date - The date string
+ * @returns {string} A 6-character hash string
+ */
+function generateShortHash(taskName = '', date = '', label = '') {
+  const input = `${taskName}-${date}-${label}`.toLowerCase();
+  let hash1 = 5381; // First hash seed
+  let hash2 = 52711; // Second hash seed
+  
+  // Generate two different hashes for better distribution
+  for (let i = 0; i < input.length; i++) {
+    const char = input.charCodeAt(i);
+    // DJB2-like algorithm for first hash
+    hash1 = ((hash1 << 5) + hash1) + char;
+    // Different bit manipulation for second hash
+    hash2 = ((hash2 << 7) + hash2) + char;
+  }
+
+  // Combine both hashes and ensure positive values
+  hash1 = Math.abs(hash1);
+  hash2 = Math.abs(hash2);
+
+  // Create two parts of the final hash using different bases
+  const part1 = hash1.toString(36).slice(-6); // First 6 chars
+  const part2 = hash2.toString(36).slice(-6); // Second 6 chars
+
+  // Combine and ensure exactly 12 characters
+  const combined = (part1 + part2).padEnd(12, 'a').slice(0, 12);
+  
+  return combined;
+}
+
+/**
  * Transforms raw transaction data into recognition records with faulty transaction filtering
  * @param {Array} rawData - Array of transaction records from the database
  * @returns {Array} Transformed data with recognition records, excluding faulty transactions
@@ -82,7 +116,7 @@ export function transformTransactionData(rawData) {
     
     const recognitions = [];
     
-    contributions.forEach((contribution, contributionIndex) => {
+    contributions.forEach((contribution) => {
       const {
         name = [],
         description = [],
@@ -91,17 +125,27 @@ export function transformTransactionData(rawData) {
         taskCreator = []
       } = contribution;
       
-      const contribution_id = `${transaction.tx_id}-${contributionIndex}`;
-      const taskCreatorValue = Array.isArray(taskCreator) ? taskCreator[0] : taskCreator;
       const taskName = name.length > 0 ? name.join(' ') : description.join(' ');
+      const date = arrayMap.date?.[0] || '';
+      const label = arrayMap.label?.[0] || '';
+      
+      // Generate short contribution ID
+      const task_id = generateShortHash(taskName, date, label);
+      const taskCreatorValue = Array.isArray(taskCreator) ? taskCreator[0] : taskCreator;
       
       Object.entries(contributors).forEach(([contributorId, amounts]) => {
+        const recognition_id = generateRecognitionId({
+          task_id,
+          contributor_id: contributorId
+        });
+
         recognitions.push({
+          recognition_id,
           transaction_hash: transaction.transaction_id,
           transaction_timestamp: transaction.transaction_date,
           tx_type: transaction.tx_type,
           tx_id: transaction.tx_id,
-          task_id: contribution_id,
+          task_id: task_id,
           created_at: transaction.created_at,
           contributor_id: contributorId,
           task_name: taskName,
@@ -120,6 +164,18 @@ export function transformTransactionData(rawData) {
       recognitions
     };
   });
+}
+
+/**
+ * Generates a consistent recognition ID based on unique recognition attributes
+ * @param {Object} params - Parameters used to generate the recognition ID
+ * @returns {string} A consistent, unique recognition ID
+ */
+function generateRecognitionId({
+  task_id,
+  contributor_id
+}) {
+  return [task_id, contributor_id].join('-');
 }
 
 /**
