@@ -202,7 +202,7 @@ const QueryTester: React.FC = () => {
               color: 'white'
             }}>
               <pre>
-                {JSON.stringify(results.recognitions.slice(0, 5), null, 2)}
+                {JSON.stringify(results.recognitions.slice(0, 10), null, 2)}
               </pre>
             </div>
           </div>

@@ -1,42 +1,110 @@
 // utils/transformRecognitions.js
 
 /**
- * Transforms raw transaction data into recognition records
+ * Transforms raw transaction data into recognition records with faulty transaction filtering
  * @param {Array} rawData - Array of transaction records from the database
- * @returns {Array} Transformed data with recognition records
+ * @returns {Array} Transformed data with recognition records, excluding faulty transactions
  */
 export function transformTransactionData(rawData) {
-  return rawData.map(transaction => {
+  // Get faulty transaction filters from the raw data
+  const faultyTxFilters = rawData.filter(t => 
+    t.tx_json?.msg && t.tx_json.msg[0] === "FaultyTx-Filter"
+  );
+
+  // First, apply faulty transaction filtering
+  const processedData = rawData.map(transaction => {
     const txJson = transaction.tx_json || {};
     const contributions = txJson.contributions || [];
     
-    // Create array to store individual recognitions
+    // Find any matching faulty filters for this transaction
+    const matchingFilters = faultyTxFilters.filter(filter => 
+      filter.tx_json?.faultyTx === transaction.transaction_id
+    );
+
+    let processedContributions = [...contributions];
+
+    if (matchingFilters.length > 0) {
+      matchingFilters.forEach(filter => {
+        const faultyContributions = filter.tx_json?.contributions || [];
+        
+        // Get global contributors to remove (those without specific task names)
+        const globalContributorsToRemove = faultyContributions
+          .filter(fc => !fc.name)
+          .flatMap(fc => fc.contributors || []);
+
+        // Filter out faulty contributions
+        processedContributions = processedContributions.filter(contribution => {
+          const matchingFaultyContribution = faultyContributions.find(fc => 
+            fc.name && fc.name[0] === contribution.name?.[0]
+          );
+
+          // Combine global and specific contributors to remove
+          const contributorsToRemove = [
+            ...globalContributorsToRemove,
+            ...(matchingFaultyContribution?.contributors || [])
+          ];
+
+          // Remove faulty contributors from the contribution
+          if (contribution.contributors) {
+            const filteredContributors = {};
+            Object.entries(contribution.contributors).forEach(([contributorId, amounts]) => {
+              if (!contributorsToRemove.includes(contributorId)) {
+                filteredContributors[contributorId] = amounts;
+              }
+            });
+            contribution.contributors = filteredContributors;
+          }
+
+          // Keep contribution only if it still has valid contributors
+          return Object.keys(contribution.contributors || {}).length > 0;
+        });
+      });
+    }
+
+    return {
+      ...transaction,
+      tx_json: {
+        ...txJson,
+        contributions: processedContributions
+      }
+    };
+  });
+
+  // Filter out the FaultyTx-Filter entries themselves from the processed data
+  const filteredData = processedData.filter(t => 
+    !(t.tx_json?.msg && t.tx_json.msg[0] === "FaultyTx-Filter")
+  );
+
+  // Then proceed with the regular transformation
+  return filteredData.map(transaction => {
+    const txJson = transaction.tx_json || {};
+    const contributions = txJson.contributions || [];
+    
     const recognitions = [];
     
     contributions.forEach((contribution, contributionIndex) => {
       const {
         name = [],
+        description = [],
         arrayMap = {},
         contributors = {},
         taskCreator = []
       } = contribution;
       
-      // Create a unique contribution ID combining transaction ID and contribution index
       const contribution_id = `${transaction.tx_id}-${contributionIndex}`;
-      
-      // Handle taskCreator that could be string or array
       const taskCreatorValue = Array.isArray(taskCreator) ? taskCreator[0] : taskCreator;
+      const taskName = name.length > 0 ? name.join(' ') : description.join(' ');
       
-      // For each contributor in the contribution
       Object.entries(contributors).forEach(([contributorId, amounts]) => {
         recognitions.push({
           transaction_hash: transaction.transaction_id,
           transaction_timestamp: transaction.transaction_date,
+          tx_type: transaction.tx_type,
           tx_id: transaction.tx_id,
-          contribution_id,
+          task_id: contribution_id,
           created_at: transaction.created_at,
           contributor_id: contributorId,
-          task_name: name.join(' '),
+          task_name: taskName,
           date: arrayMap.date?.[0],
           label: arrayMap.label?.[0],
           subGroup: arrayMap.subGroup?.[0],
