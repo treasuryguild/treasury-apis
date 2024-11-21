@@ -5,14 +5,23 @@ import type { ApiResponse, QueryConfig } from '../types/recognition';
 const API_KEY = process.env.NEXT_PUBLIC_SERVER_API_KEY; 
 const PROJECT_ID = '722294ef-c9e4-4b2f-8779-a3f7caf4f28d';
 
+// Helper function to format date as dd.mm.yy
+const formatDate = (date: Date): string => {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear().toString().slice(-2);
+  return `${day}.${month}.${year}`;
+};
+
 const QueryTester: React.FC = () => {
   const [results, setResults] = useState<ApiResponse | null>(null);
   const [contributorsData, setContributorsData] = useState<any>(null);
   const [walletsData, setWalletsData] = useState<any>(null);
+  const [zoomMeetingsData, setZoomMeetingsData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = async (queryParams: string = '', endpoint: string = 'recognitions'): Promise<void> => {
+  const fetchData = async (queryParams: string | (() => string), endpoint: string = 'recognitions'): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -25,6 +34,7 @@ const QueryTester: React.FC = () => {
     try {
       let headers: HeadersInit = {};
       let url = '';
+      const actualQuery = typeof queryParams === 'function' ? queryParams() : queryParams;
 
       // Set up headers and URL based on endpoint
       switch(endpoint) {
@@ -33,7 +43,7 @@ const QueryTester: React.FC = () => {
             'api-key': API_KEY,
             'project-id': PROJECT_ID
           };
-          url = `/api/recognitions${queryParams}`;
+          url = `/api/recognitions${actualQuery}`;
           break;
         case 'contributors':
         case 'gwallets':
@@ -41,6 +51,12 @@ const QueryTester: React.FC = () => {
             'api_key': API_KEY
           };
           url = endpoint === 'contributors' ? '/api/contributors' : '/api/getGWallets';
+          break;
+        case 'zoom-meetings':
+          headers = {
+            'api-key': API_KEY
+          };
+          url = `/api/zoom-meetings${actualQuery}`;
           break;
       }
 
@@ -58,16 +74,25 @@ const QueryTester: React.FC = () => {
           setResults(data);
           setContributorsData(null);
           setWalletsData(null);
+          setZoomMeetingsData(null);
           break;
         case 'contributors':
           setResults(null);
           setContributorsData(data);
           setWalletsData(null);
+          setZoomMeetingsData(null);
           break;
         case 'gwallets':
           setResults(null);
           setContributorsData(null);
           setWalletsData(data);
+          setZoomMeetingsData(null);
+          break;
+        case 'zoom-meetings':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(data);
           break;
       }
     } catch (err) {
@@ -117,6 +142,35 @@ const QueryTester: React.FC = () => {
       name: 'Get All Wallet Addresses',
       query: '',
       endpoint: 'gwallets'
+    },
+    {
+      name: 'All Zoom Meetings (Last 10 Months)',
+      query: () => {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 10);
+        return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+      },
+      endpoint: 'zoom-meetings'
+    },
+    {
+      name: 'Zoom: Last 3 Months',
+      query: () => {
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(startDate.getMonth() - 3);
+        return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+      },
+      endpoint: 'zoom-meetings'
+    },
+    {
+      name: 'Zoom: Last Week',
+      query: () => {
+        const endDate = new Date();
+        const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+      },
+      endpoint: 'zoom-meetings'
     }
   ];
 
@@ -256,6 +310,32 @@ const QueryTester: React.FC = () => {
           }}>
             <pre>
               {JSON.stringify(walletsData.slice(0, 5), null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {zoomMeetingsData && (
+        <div style={{ 
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '20px',
+          backgroundColor: 'black',
+          color: 'white',
+          marginTop: '20px'
+        }}>
+          <h2 style={{ marginBottom: '10px' }}>Zoom Meetings Results</h2>
+          <h3>Total Meetings: {zoomMeetingsData.meetings.length}</h3>
+          <div style={{ 
+            maxHeight: '400px', 
+            overflow: 'auto',
+            backgroundColor: 'black',
+            padding: '10px',
+            borderRadius: '4px',
+            color: 'white'
+          }}>
+            <pre>
+              {JSON.stringify(zoomMeetingsData, null, 2)}
             </pre>
           </div>
         </div>

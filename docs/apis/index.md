@@ -13,6 +13,7 @@ Welcome to the API documentation. Here you'll find comprehensive guides and docu
 - [Recognitions API](/treasury-apis/apis/recognitions)
 - [Wallet Collector API](/treasury-apis/apis/wallets)
 - [Contributors API](/treasury-apis/apis/contributors)
+- [Zoom API](/treasury-apis/apis/zoom)
 
 ## Getting Started
 
