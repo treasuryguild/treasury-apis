@@ -42,33 +42,59 @@ project-id: 722294ef-c9e4-4b2f-8779-a3f7caf4f28d
 ## Response Format
 
 ### Success Response (200 OK)
-Returns an object containing recognitions array and metadata:
+Returns an object containing recognitions array and metadata.
+
+#### Example Response Body
+```typescript
+{
+  // Array of recognition records
+  recognitions: Recognition[];
+  metadata: {
+    total: number;        // Total number of records
+    projectId: string;    // Project identifier
+    appliedFilters: {     // Applied filter values
+      contributor_id: string | null;
+      subgroup: string | null;
+      task_name: string | null;
+      dateRange: {
+        startDate: string | null;  // Format: dd.mm.yy
+        endDate: string | null;    // Format: dd.mm.yy
+      }
+    }
+  }
+}
+```
 
 Example Response:
 ```json
 {
   "recognitions": [
     {
-      "recognition_id": "string",
-      "transaction_hash": "string",
-      "transaction_timestamp": "string",
-      "tx_type": "string",
-      "tx_id": "string",
-      "task_id": "string",
-      "created_at": "string",
-      "contributor_id": "string",
-      "task_name": "string",
-      "date": "string",
-      "label": "string",
-      "subGroup": "string",
-      "taskCreator": "string",
-      "amounts": {},
-      "exchange_rate": 0
+      "recognition_id": "m0y7q3n81nzx-mmdfl0",
+      "transaction_hash": "0202cae4ff851d7cee6e041a945b4b13b27aa1d7dbf77153da8bce1d8036f926",
+      "transaction_timestamp": "1732017590927",
+      "tx_type": "Outgoing",
+      "tx_id": "565ebbc1-0b33-448e-ba81-56245ac0b618",
+      "task_id": "m0y7q3n81nzx",
+      "created_at": "2024-11-19T11:59:51.075998+00:00",
+      "contributor_id": "mmdfl0",
+      "task_name": "Participate in Marketing Guild 15.11.24",
+      "date": "15.11.24",
+      "label": [
+        "Community Communication",
+        "Coordination"
+      ],
+      "subGroup": "Marketing Guild",
+      "taskCreator": "singularitynet",
+      "amounts": {
+        "MINS": "65"
+      },
+      "exchange_rate": "0.737"
     }
   ],
   "metadata": {
-    "total": 0,
-    "projectId": "string",
+    "total": 1,
+    "projectId": "722294ef-c9e4-4b2f-8779-a3f7caf4f28d",
     "appliedFilters": {
       "contributor_id": null,
       "subgroup": null,
