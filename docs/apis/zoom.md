@@ -210,7 +210,7 @@ The API implements rate limiting when fetching participant data from Zoom to avo
 ### cURL
 ```bash
 curl -X GET \
-  'https://your-api-domain.com/api/zoom-meetings?startDate=01.01.24&endDate=31.01.24' \
+  'https://treasury-apis.netlify.app/api/zoom-meetings?startDate=01.01.24&endDate=31.01.24' \
   -H 'api-key: your_api_key_here'
 ```
 
