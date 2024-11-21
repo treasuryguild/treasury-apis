@@ -31,6 +31,11 @@ headers: {
   'api-key': 'your_server_api_key',
   'project-id': 'your_project_id'
 }
+
+// For Zoom Meetings API
+headers: {
+  'api-key': 'your_server_api_key'
+}
 ```
 
 ⚠️ **Security Note**: Never expose your API key in client-side code. Always make API calls from your server.
@@ -87,6 +92,22 @@ const response = await fetch('https://treasury-apis.netlify.app/api/recognitions
 const recognitions = await response.json();
 ```
 
+### 4. Zoom Meetings API
+
+Query zoom meetings with date filters:
+
+```javascript
+// Using fetch
+const response = await fetch('https://treasury-apis.netlify.app/api/zoom-meetings?startDate=01.01.24&endDate=31.01.24', {
+  method: 'GET',
+  headers: {
+    'api-key': 'your_server_api_key'
+  }
+});
+
+const meetings = await response.json();
+```
+
 ## Available Query Parameters
 
 ### Recognitions API
@@ -99,6 +120,16 @@ const recognitions = await response.json();
 Example:
 ```javascript
 /api/recognitions?contributor_id=jnaxjp&subgroup=treasury guild
+```
+
+### Zoom Meetings API
+- `startDate`: Start date for date range (format: DD.MM.YY)
+- `endDate`: End date for date range (format: DD.MM.YY)
+- `includeMissingData`: Include meetings with missing date information (default: true)
+
+Example:
+```javascript
+/api/zoom-meetings?startDate=01.01.24&endDate=31.01.24&includeMissingData=true
 ```
 
 ## Response Formats
@@ -167,6 +198,61 @@ Example:
 }
 ```
 
+### Zoom Meetings API Response
+```json
+{
+  "meetings": [
+    {
+      "id": "123456789",
+      "uuid": "abcd1234-efgh-5678-ijkl-mnopqrstuvwx",
+      "topic": "Marketing Guild",
+      "scheduled_start": "2024-01-15T10:00:00Z",
+      "actual_start": "2024-01-15T10:02:15Z",
+      "duration": 60,
+      "total_participants": 8,
+      "participants": [
+        {
+          "id": "04LJMnpnTc2IusLb5qv0ZQ",
+          "user_id": "16778240",
+          "name": "Ambassadors SingularityNET",
+          "user_email": "singularitynetambassadors@gmail.com",
+          "join_time": "2024-03-15T12:52:45.000Z",
+          "leave_time": "2024-03-15T13:33:12.000Z",
+          "duration": 2427,
+          "registrant_id": "",
+          "failover": false,
+          "status": "in_meeting",
+          "groupId": "",
+          "internal_user": true
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "total": 1,
+    "appliedFilters": {
+      "dateRange": {
+        "startDate": "01.01.24",
+        "endDate": "31.01.24",
+        "parsedStartDate": "2024-01-01T00:00:00.000Z",
+        "parsedEndDate": "2024-01-31T23:59:59.999Z"
+      },
+      "includeMissingData": true
+    },
+    "summary": {
+      "totalMeetings": 1,
+      "totalParticipants": 8,
+      "meetingsWithoutDates": 0,
+      "meetingsWithoutParticipants": 0,
+      "dateRange": {
+        "earliest": "2024-01-15T10:02:15Z",
+        "latest": "2024-01-15T10:02:15Z"
+      }
+    }
+  }
+}
+```
+
 ## Error Handling
 
 Our APIs use standard HTTP response codes:
@@ -174,6 +260,7 @@ Our APIs use standard HTTP response codes:
 | Code | Description |
 |------|-------------|
 | 200  | Success |
+| 400  | Bad Request |
 | 403  | Invalid or missing API key |
 | 404  | Resource not found |
 | 405  | Method not allowed |
@@ -210,6 +297,7 @@ Currently, there are no strict rate limits in place, but please be mindful of yo
 - Explore the [Contributors API](/treasury-apis/apis/contributors) documentation
 - Learn about the [Wallets API](/treasury-apis/apis/wallets)
 - Check out the [Recognitions API](/treasury-apis/apis/recognitions)
+- Check out the [Zoom Meetings API](/treasury-apis/apis/zoom)
 
 ## Need Help?
 

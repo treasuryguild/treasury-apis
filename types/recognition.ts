@@ -34,6 +34,6 @@ export interface ApiResponse {
 
 export interface QueryConfig {
   name: string;
-  query: string;
+  query: string | (() => string);
   endpoint: string;
 }
