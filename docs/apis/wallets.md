@@ -2,6 +2,7 @@
 layout: default
 title: Wallet Collector API
 nav_order: 4
+parent: APIs
 ---
 
 # Wallet Data API
