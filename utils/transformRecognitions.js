@@ -127,7 +127,7 @@ export function transformTransactionData(rawData) {
       
       const taskName = name.length > 0 ? name.join(' ') : description.join(' ');
       const date = arrayMap.date?.[0] || '';
-      const label = arrayMap.label?.[0] || '';
+      const label = Array.isArray(arrayMap.label) ? arrayMap.label.join(' ') : (arrayMap.label || '');
       
       // Generate short contribution ID
       const task_id = generateShortHash(taskName, date, label);
@@ -150,7 +150,7 @@ export function transformTransactionData(rawData) {
           contributor_id: contributorId,
           task_name: taskName,
           date: arrayMap.date?.[0],
-          label: arrayMap.label?.[0],
+          label: arrayMap.label,
           subGroup: arrayMap.subGroup?.[0],
           taskCreator: taskCreatorValue,
           amounts: amounts,
