@@ -2,6 +2,7 @@
 layout: default
 title: Contributors API
 nav_order: 5
+parent: APIs
 ---
 
 # Contributors API

@@ -2,6 +2,7 @@
 layout: default
 title: Recognitions API
 nav_order: 3
+parent: APIs
 ---
 
 # Recognition API

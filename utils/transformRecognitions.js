@@ -6,8 +6,8 @@
  * @param {string} date - The date string
  * @returns {string} A 6-character hash string
  */
-function generateShortHash(taskName = '', date = '', label = '') {
-  const input = `${taskName}-${date}-${label}`.toLowerCase();
+function generateShortHash(taskName = '', date = '', labels = '') {
+  const input = `${taskName}-${date}-${labels}`.toLowerCase();
   let hash1 = 5381; // First hash seed
   let hash2 = 52711; // Second hash seed
   

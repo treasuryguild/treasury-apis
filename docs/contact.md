@@ -45,7 +45,7 @@ Support is provided during standard working hours (UTC+2)
 ## Additional Resources
 - Review our [FAQ](/treasury-apis/faq) section
 - Check [Common Issues](/treasury-apis/troubleshooting)
-- Visit our [Getting Started](/treasury-apis/guides/getting-started) guide
+- Visit our [Getting Started](/treasury-apis/index) guide
 
 ## Security Concerns
 If you discover any security issues, please:
