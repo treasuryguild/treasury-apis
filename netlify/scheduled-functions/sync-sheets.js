@@ -1,4 +1,3 @@
-// netlify/functions/scheduled-sync.js
 const axios = require('axios');
 
 const handler = async (event, context) => {
@@ -7,7 +6,6 @@ const handler = async (event, context) => {
   console.log('URL:', process.env.URL);
 
   try {
-    // Use http://localhost:3000 for the Next.js API route
     const baseUrl = process.env.NODE_ENV === 'development' 
       ? 'http://localhost:3000' 
       : process.env.URL;
