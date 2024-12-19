@@ -1,2 +1,10 @@
 [[plugins]]
 package = "@netlify/plugin-nextjs"
+
+[functions]
+  directory = "netlify/functions"
+  # Runs at midnight UTC daily
+  schedule = "0 0 * * *"
+
+[build]
+  functions = "netlify/functions"
