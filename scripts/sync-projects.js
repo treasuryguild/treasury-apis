@@ -80,6 +80,8 @@ async function processProject(projectId) {
       const milestoneData = await fetchMilestoneData(projectId, snapshot.milestone);
       console.log(`Processing milestone ${snapshot.milestone} data:`, JSON.stringify(milestoneData, null, 2));
       
+      const milestoneDetails = milestoneData[0]; // Since we're getting one record per milestone
+      
       formattedData.push({
         title: snapshot.title,
         project_id: snapshot.project_id,
@@ -91,10 +93,10 @@ async function processProject(projectId) {
         funds_distributed: snapshot.funds_distributed,
         som_signoff_count: snapshot.som_signoff_count,
         poa_signoff_count: snapshot.poa_signoff_count,
-        outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
-        success_criteria_approved: milestoneData?.[0]?.som_reviews?.[0]?.success_criteria_approves || false,
-        evidence_approved: milestoneData?.[0]?.som_reviews?.[0]?.evidence_approves || false,
-        poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false
+        outputs_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.outputs_approves) || false,
+        success_criteria_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.success_criteria_approves) || false,
+        evidence_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.evidence_approves) || false,
+        poa_content_approved: milestoneDetails?.poas?.[0]?.poas_reviews?.some(r => r.current && r.content_approved) || false
       });
     }
 
