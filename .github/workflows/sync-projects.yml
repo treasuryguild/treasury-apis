@@ -8,7 +8,7 @@ on:
       project_ids:
         description: 'Comma-separated list of project IDs to sync'
         required: false
-        default: '1000107,1000108,1000109'  # Add your default project IDs here
+        default: '1000107,1100271,1100022,1200148,1200147,1200220,1200202,1200254,1200201,1300135,1300134,1300130,1300050,1300036'  # Add your default project IDs here
 
 jobs:
   sync-projects:
