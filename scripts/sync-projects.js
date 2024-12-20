@@ -7,8 +7,27 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL2;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY2;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+async function getProposalId(projectId) {
+  console.log(`Getting proposal ID for project ${projectId}`);
+  
+  const { data, error } = await supabase
+    .from('proposals')
+    .select('id')
+    .eq('project_id', projectId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching proposal ID:', error);
+    throw error;
+  }
+
+  console.log(`Found proposal ID ${data?.id} for project ${projectId}`);
+  return data?.id;
+}
+
 async function fetchMilestoneData(projectId, milestone) {
-  console.log(`Fetching milestone data for project ${projectId}, milestone ${milestone}`);
+  const proposalId = await getProposalId(projectId);
+  console.log(`Fetching milestone data for proposal ${proposalId}, milestone ${milestone}`);
   
   const { data, error } = await supabase
     .from('soms')
@@ -19,7 +38,7 @@ async function fetchMilestoneData(projectId, milestone) {
       som_reviews(outputs_approves,success_criteria_approves,evidence_approves,current),
       poas(poas_reviews(content_approved,current),signoffs(created_at))
     `)
-    .eq('proposal_id', projectId)
+    .eq('proposal_id', proposalId)
     .eq('milestone', milestone)
     .eq('som_reviews.current', true)
     .eq('poas.poas_reviews.current', true)
@@ -104,7 +123,7 @@ async function processProject(projectId) {
     throw error;
   }
 }
-
+  
 async function main() {
   const projectIds = (process.env.PROJECT_IDS || '1000107').split(',');
   let allFormattedData = [];
