@@ -1,3 +1,4 @@
+// ../netlify/scheduled-functions/sync-sheets.js
 const axios = require('axios');
 
 const handler = async (event, context) => {
