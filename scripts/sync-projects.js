@@ -83,47 +83,97 @@ async function updateGoogleSheets(formattedData) {
   return response.data;
 }
 
+async function getProposalDetails(projectId) {
+  console.log(`Getting proposal details for project ${projectId}`);
+  
+  const { data, error } = await supabase
+    .from('proposals')
+    .select(`
+      id,
+      title,
+      budget,
+      milestones_qty,
+      funds_distributed,
+      project_id
+    `)
+    .eq('project_id', projectId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching proposal details:', error);
+    throw error;
+  }
+
+  console.log(`Found proposal details for project ${projectId}:`, data);
+  return data;
+}
+
 async function processProject(projectId) {
   console.log(`Processing project ${projectId}...`);
   
   try {
-    // First get snapshot data to determine milestones
+    const proposalDetails = await getProposalDetails(projectId);
+    
+    // First try to get snapshot data
     const snapshotData = await fetchSnapshotData(projectId);
     console.log(`Found ${snapshotData.length} milestones for project ${projectId}`);
     
-    // Process each milestone
-    const formattedData = [];
-    for (const snapshot of snapshotData) {
-      const milestoneData = await fetchMilestoneData(projectId, snapshot.milestone);
-      console.log(`Processing milestone ${snapshot.milestone} data:`, JSON.stringify(milestoneData, null, 2));
-      
-      const milestoneDetails = milestoneData[0]; // Since we're getting one record per milestone
-      
-      formattedData.push({
-        title: snapshot.title,
-        project_id: snapshot.project_id,
-        milestone: snapshot.milestone,
-        month: snapshot.month,
-        cost: snapshot.cost,
-        completion: snapshot.completion,
-        budget: snapshot.budget,
-        funds_distributed: snapshot.funds_distributed,
-        som_signoff_count: snapshot.som_signoff_count,
-        poa_signoff_count: snapshot.poa_signoff_count,
-        outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
-        success_criteria_approved: milestoneData?.[0]?.som_reviews?.[0]?.success_criteria_approves || false,
-        evidence_approved: milestoneData?.[0]?.som_reviews?.[0]?.evidence_approves || false,
-        poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false
-      });
+    // If we have snapshot data, process it normally
+    if (snapshotData.length > 0) {
+      const formattedData = [];
+      for (const snapshot of snapshotData) {
+        const milestoneData = await fetchMilestoneData(projectId, snapshot.milestone);
+        console.log(`Processing milestone ${snapshot.milestone} data:`, JSON.stringify(milestoneData, null, 2));
+        
+        formattedData.push({
+          title: snapshot.title,
+          project_id: snapshot.project_id,
+          milestone: snapshot.milestone,
+          month: snapshot.month,
+          cost: snapshot.cost,
+          completion: snapshot.completion,
+          budget: snapshot.budget,
+          funds_distributed: snapshot.funds_distributed,
+          som_signoff_count: snapshot.som_signoff_count,
+          poa_signoff_count: snapshot.poa_signoff_count,
+          outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
+          success_criteria_approved: milestoneData?.[0]?.som_reviews?.[0]?.success_criteria_approves || false,
+          evidence_approved: milestoneData?.[0]?.som_reviews?.[0]?.evidence_approves || false,
+          poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false
+        });
+      }
+      return formattedData;
+    } 
+    // For new proposals without milestone data yet
+    else {
+      const formattedData = [];
+      // Create an entry for each planned milestone
+      for (let i = 1; i <= proposalDetails.milestones_qty; i++) {
+        formattedData.push({
+          title: proposalDetails.title,
+          project_id: proposalDetails.project_id,
+          milestone: i,
+          month: i,  // Assuming one month per milestone
+          cost: Math.round(proposalDetails.budget / proposalDetails.milestones_qty), // Divide budget equally
+          completion: 0,
+          budget: proposalDetails.budget,
+          funds_distributed: proposalDetails.funds_distributed,
+          som_signoff_count: 0,
+          poa_signoff_count: 0,
+          outputs_approved: false,
+          success_criteria_approved: false,
+          evidence_approved: false,
+          poa_content_approved: false
+        });
+      }
+      return formattedData;
     }
-
-    return formattedData;
   } catch (error) {
     console.error(`Error processing project ${projectId}:`, error);
     throw error;
   }
 }
-  
+
 async function main() {
   const projectIds = (process.env.PROJECT_IDS || '1000107').split(',');
   let allFormattedData = [];
