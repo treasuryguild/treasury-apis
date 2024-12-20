@@ -35,19 +35,35 @@ async function fetchMilestoneData(projectId, milestone) {
       month,
       cost,
       completion,
-      som_reviews(outputs_approves,success_criteria_approves,evidence_approves,current),
-      poas(poas_reviews(content_approved,current),signoffs(created_at))
+      som_reviews!inner(
+        outputs_approves,
+        success_criteria_approves,
+        evidence_approves,
+        current
+      ),
+      poas!inner(
+        poas_reviews!inner(
+          content_approved,
+          current
+        ),
+        signoffs(created_at)
+      )
     `)
     .eq('proposal_id', proposalId)
     .eq('milestone', milestone)
     .eq('som_reviews.current', true)
     .eq('poas.poas_reviews.current', true)
-    .order('created_at', { ascending: false })
+    .order('poas.created_at', { ascending: false })
     .limit(1);
 
   if (error) {
     console.error('Error fetching milestone data:', error);
     throw error;
+  }
+
+  // Ensure we only get the most recent POA
+  if (data?.length && data[0].poas?.length > 1) {
+    data[0].poas = [data[0].poas[0]];
   }
 
   console.log('Raw milestone data:', JSON.stringify(data, null, 2));
