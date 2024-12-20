@@ -10,80 +10,29 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function fetchMilestoneData(projectId, milestone) {
   console.log(`Fetching milestone data for project ${projectId}, milestone ${milestone}`);
   
-  try {
-    // First, let's check if the base record exists without joins
-    const { data: baseData, error: baseError } = await supabase
-      .from('soms')
-      .select('*')
-      .eq('proposal_id', projectId)
-      .eq('milestone', milestone)
-      .order('created_at', { ascending: false })
-      .limit(1);
+  const { data, error } = await supabase
+    .from('soms')
+    .select(`
+      month,
+      cost,
+      completion,
+      som_reviews(outputs_approves,success_criteria_approves,evidence_approves,current),
+      poas(poas_reviews(content_approved,current),signoffs(created_at))
+    `)
+    .eq('proposal_id', projectId)
+    .eq('milestone', milestone)
+    .eq('som_reviews.current', true)
+    .eq('poas.poas_reviews.current', true)
+    .order('created_at', { ascending: false })
+    .limit(1);
 
-    if (baseError) {
-      console.error('Error fetching base data:', baseError);
-      throw baseError;
-    }
-
-    console.log('Base data exists:', !!baseData?.length, baseData);
-
-    if (!baseData?.length) {
-      console.log('No base record found for this milestone');
-      return [];
-    }
-
-    // Now fetch with all relations
-    const { data, error } = await supabase
-      .from('soms')
-      .select(`
-        month,
-        cost,
-        completion,
-        som_reviews(
-          outputs_approves,
-          success_criteria_approves,
-          evidence_approves,
-          current
-        ),
-        poas(
-          poas_reviews(
-            content_approved,
-            current
-          )
-        )
-      `)
-      .eq('proposal_id', projectId)
-      .eq('milestone', milestone)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error('Error fetching milestone data:', error);
-      throw error;
-    }
-
-    console.log('Full query response:', JSON.stringify(data, null, 2));
-    
-    // Check if we have the required related data
-    if (data?.length && (!data[0].som_reviews?.length || !data[0].poas?.length)) {
-      console.log('Warning: Missing related data for milestone', milestone, {
-        hasSomReviews: !!data[0].som_reviews?.length,
-        hasPoas: !!data[0].poas?.length
-      });
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Detailed error in fetchMilestoneData:', {
-      error,
-      projectId,
-      milestone,
-      message: error.message,
-      details: error.details,
-      hint: error.hint
-    });
+  if (error) {
+    console.error('Error fetching milestone data:', error);
     throw error;
   }
+
+  console.log('Raw milestone data:', JSON.stringify(data, null, 2));
+  return data;
 }
 
 async function fetchSnapshotData(projectId) {
@@ -142,10 +91,10 @@ async function processProject(projectId) {
         funds_distributed: snapshot.funds_distributed,
         som_signoff_count: snapshot.som_signoff_count,
         poa_signoff_count: snapshot.poa_signoff_count,
-        outputs_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.outputs_approves) || false,
-        success_criteria_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.success_criteria_approves) || false,
-        evidence_approved: milestoneDetails?.som_reviews?.some(r => r.current && r.evidence_approves) || false,
-        poa_content_approved: milestoneDetails?.poas?.[0]?.poas_reviews?.some(r => r.current && r.content_approved) || false
+        outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
+        success_criteria_approved: milestoneData?.[0]?.som_reviews?.[0]?.success_criteria_approves || false,
+        evidence_approved: milestoneData?.[0]?.som_reviews?.[0]?.evidence_approves || false,
+        poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false
       });
     }
 
