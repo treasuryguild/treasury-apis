@@ -53,7 +53,7 @@ async function fetchMilestoneData(projectId, milestone) {
     .eq('milestone', milestone)
     .eq('som_reviews.current', true)
     .eq('poas.poas_reviews.current', true)
-    .order('poas.created_at', { ascending: false })
+    .order('created_at', { ascending: false })  // Changed this line - removed poas. prefix
     .limit(1);
 
   if (error) {
@@ -63,7 +63,13 @@ async function fetchMilestoneData(projectId, milestone) {
 
   // Ensure we only get the most recent POA
   if (data?.length && data[0].poas?.length > 1) {
-    data[0].poas = [data[0].poas[0]];
+    // Sort POAs by created_at in descending order and take the first one
+    const sortedPoas = [...data[0].poas].sort((a, b) => {
+      const dateA = a.signoffs?.[0]?.created_at || '0';
+      const dateB = b.signoffs?.[0]?.created_at || '0';
+      return dateB.localeCompare(dateA);
+    });
+    data[0].poas = [sortedPoas[0]];
   }
 
   console.log('Raw milestone data:', JSON.stringify(data, null, 2));
