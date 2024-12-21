@@ -4,6 +4,7 @@ const axios = require('axios');
 
 // Initialize constants
 const MILESTONES_BASE_URL = process.env.NEXT_PUBLIC_MILESTONES_URL || 'https://milestones.projectcatalyst.io';
+console.log('MILESTONES_BASE_URL:', MILESTONES_BASE_URL);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL2;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY2;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -136,6 +137,7 @@ async function processProject(projectId) {
   try {
     const proposalDetails = await getProposalDetails(projectId);
     const milestonesLink = `${MILESTONES_BASE_URL}/projects/${projectId}`;
+    console.log('Generated milestonesLink:', milestonesLink);
     
     // First try to get snapshot data
     const snapshotData = await fetchSnapshotData(projectId);
