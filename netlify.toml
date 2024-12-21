@@ -1,12 +1,2 @@
 [[plugins]]
 package = "@netlify/plugin-nextjs"
-
-[functions]
-  directory = "netlify/functions"
-
-[build]
-  functions = "netlify/functions"
-
-[[scheduled-functions]]
-schedule = "0 0 * * *"
-function = "sync-sheets"
