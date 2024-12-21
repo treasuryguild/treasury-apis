@@ -2,7 +2,7 @@ name: Sync Project Data to Sheets
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Runs every 6 hours
+    - cron: '0 0 * * *'  # Runs at Midnight UTC every day
   workflow_dispatch:        # Allows manual triggering
     inputs:
       project_ids:
