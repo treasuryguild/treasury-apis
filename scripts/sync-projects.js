@@ -148,14 +148,15 @@ async function processProject(projectId) {
         console.log(`Processing milestone ${snapshot.milestone} data:`, JSON.stringify(milestoneData, null, 2));
         
         formattedData.push({
-          title: snapshot.title,
-          project_id: snapshot.project_id,
+          title: proposalDetails.title,
+          project_id: projectId,
           milestone: snapshot.milestone,
           month: snapshot.month,
           cost: snapshot.cost,
           completion: snapshot.completion,
-          budget: snapshot.budget,
-          funds_distributed: snapshot.funds_distributed,
+          budget: proposalDetails.budget,
+          funds_distributed: proposalDetails.funds_distributed,
+          milestones_qty: proposalDetails.milestones_qty,
           som_signoff_count: snapshot.som_signoff_count,
           poa_signoff_count: snapshot.poa_signoff_count,
           outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
@@ -173,13 +174,14 @@ async function processProject(projectId) {
       for (let i = 1; i <= proposalDetails.milestones_qty; i++) {
         formattedData.push({
           title: proposalDetails.title,
-          project_id: proposalDetails.project_id,
+          project_id: projectId,
           milestone: i,
           month: i,  // Assuming one month per milestone
           cost: Math.round(proposalDetails.budget / proposalDetails.milestones_qty), // Divide budget equally
           completion: 0,
           budget: proposalDetails.budget,
           funds_distributed: proposalDetails.funds_distributed,
+          milestones_qty: proposalDetails.milestones_qty,
           som_signoff_count: 0,
           poa_signoff_count: 0,
           outputs_approved: false,
