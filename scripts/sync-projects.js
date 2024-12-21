@@ -2,7 +2,8 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
-// Initialize Supabase client
+// Initialize constants
+const MILESTONES_BASE_URL = process.env.NEXT_PUBLIC_MILESTONES_URL || 'https://milestones.projectcatalyst.io';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL2;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY2;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -53,7 +54,7 @@ async function fetchMilestoneData(projectId, milestone) {
     .eq('milestone', milestone)
     .eq('som_reviews.current', true)
     .eq('poas.poas_reviews.current', true)
-    .order('created_at', { ascending: false })  // Changed this line - removed poas. prefix
+    .order('created_at', { ascending: false })
     .limit(1);
 
   if (error) {
@@ -63,7 +64,6 @@ async function fetchMilestoneData(projectId, milestone) {
 
   // Ensure we only get the most recent POA
   if (data?.length && data[0].poas?.length > 1) {
-    // Sort POAs by created_at in descending order and take the first one
     const sortedPoas = [...data[0].poas].sort((a, b) => {
       const dateA = a.signoffs?.[0]?.created_at || '0';
       const dateB = b.signoffs?.[0]?.created_at || '0';
@@ -135,6 +135,7 @@ async function processProject(projectId) {
   
   try {
     const proposalDetails = await getProposalDetails(projectId);
+    const milestonesLink = `${MILESTONES_BASE_URL}/projects/${projectId}`;
     
     // First try to get snapshot data
     const snapshotData = await fetchSnapshotData(projectId);
@@ -162,7 +163,8 @@ async function processProject(projectId) {
           outputs_approved: milestoneData?.[0]?.som_reviews?.[0]?.outputs_approves || false,
           success_criteria_approved: milestoneData?.[0]?.som_reviews?.[0]?.success_criteria_approves || false,
           evidence_approved: milestoneData?.[0]?.som_reviews?.[0]?.evidence_approves || false,
-          poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false
+          poa_content_approved: milestoneData?.[0]?.poas?.[0]?.poas_reviews?.[0]?.content_approved || false,
+          milestones_link: milestonesLink
         });
       }
       return formattedData;
@@ -187,7 +189,8 @@ async function processProject(projectId) {
           outputs_approved: false,
           success_criteria_approved: false,
           evidence_approved: false,
-          poa_content_approved: false
+          poa_content_approved: false,
+          milestones_link: milestonesLink
         });
       }
       return formattedData;
