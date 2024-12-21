@@ -17,7 +17,7 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL2: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL2 }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY2: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY2 }}
       NEXT_PUBLIC_GOOGLE_SCRIPT_URL: ${{ secrets.NEXT_PUBLIC_GOOGLE_SCRIPT_URL }}
-      NEXT_PUBLIC_MILESTONES_URL: ${{ secrets.NEXT_PUBLIC_MILESTONES_URL }}
+      NEXT_PUBLIC_MILESTONES_URL: 'https://milestones.projectcatalyst.io'
 
     steps:
       - uses: actions/checkout@v2
