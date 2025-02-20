@@ -8,6 +8,9 @@ export default function SyncPage() {
   const [loadingRecent, setLoadingRecent] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Use the public API key from your environment
+  const API_KEY = process.env.NEXT_PUBLIC_SERVER_API_KEY;
+
   // Fetch available files on page load
   useEffect(() => {
     async function fetchFiles() {
@@ -15,10 +18,13 @@ export default function SyncPage() {
       setMessage("");
 
       try {
-        const response = await fetch("/api/listExcelFiles", { method: "GET" });
+        const response = await fetch("/api/listExcelFiles", { 
+          method: "GET",
+          headers: { 'api_key': API_KEY }
+        });
         const data = await response.json();
 
-        if (response.ok && data.files.length) {
+        if (response.ok && data.files && data.files.length) {
           setAvailableFiles(data.files);
           setFilename(data.files[0]); // Preselect first file
         } else {
@@ -32,7 +38,7 @@ export default function SyncPage() {
     }
 
     fetchFiles();
-  }, []);
+  }, [API_KEY]);
 
   const handleSync = async (recentOnly = false) => {
     if (!filename) {
@@ -40,11 +46,7 @@ export default function SyncPage() {
       return;
     }
 
-    if (recentOnly) {
-      setLoadingRecent(true);
-    } else {
-      setLoadingSync(true);
-    }
+    recentOnly ? setLoadingRecent(true) : setLoadingSync(true);
     setMessage("");
 
     try {
@@ -52,7 +54,10 @@ export default function SyncPage() {
 
       const response = await fetch(endpoint, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          'api_key': API_KEY
+        },
         body: JSON.stringify({ filename }),
       });
 
@@ -66,11 +71,7 @@ export default function SyncPage() {
     } catch (error) {
       setMessage(`❌ Error: ${error.message}`);
     } finally {
-      if (recentOnly) {
-        setLoadingRecent(false);
-      } else {
-        setLoadingSync(false);
-      }
+      recentOnly ? setLoadingRecent(false) : setLoadingSync(false);
     }
   };
 
