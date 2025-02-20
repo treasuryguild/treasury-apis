@@ -16,37 +16,37 @@ api_key: YOUR_API_KEY_HERE
 
 ### 🔹 Fetch All Records
 ```bash
-curl -X GET "http://localhost:3000/api/excelData" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch Limited Records (e.g., first 5)
 ```bash
-curl -X GET "http://localhost:3000/api/excelData?limit=5" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData?limit=5" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Recognition ID
 ```bash
-curl -X GET "http://localhost:3000/api/excelData?recognition_id=12345" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData?recognition_id=12345" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Task ID
 ```bash
-curl -X GET "http://localhost:3000/api/excelData?task_id=1011" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData?task_id=1011" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Wallet Owner (Partial Match Allowed)
 ```bash
-curl -X GET "http://localhost:3000/api/excelData?wallet_owner=TestUser" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData?wallet_owner=TestUser" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Date Range (Format: DD.MM.YYYY)
 ```bash
-curl -X GET "http://localhost:3000/api/excelData?start_date=01.01.2024&end_date=01.02.2024" \
+curl -X GET "https://treasury-apis.netlify.app/api/excelData?start_date=01.01.2024&end_date=01.02.2024" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
@@ -67,13 +67,19 @@ curl -X POST "http://localhost:3000/api/excelData" \
         "date_completed": "01.01.2024",
         "insert_date": "01.01.2024",
         "wallet_owner": "TestUser",
+        "group_name": "SingularityNET",
+        "sub_group": "Video Workgroup",
+        "task_labels": "Operations,Facilitating",
+        "task_name": "Facilitating the CIP-1694 workshop",
+        "status": "On Chain",
+        "rewarded": true,
         "ada": 50,
         "mins": 30,
         "agix": 20,
         "usd": 5,
         "wallet_address": "addr_test...",
         "proof_link": "https://example.com/proof",
-        "transaction_id": "txn_123456"
+        "transaction_id": "9dfcecac86f1724..."
       }
     ]
   }'
@@ -92,13 +98,19 @@ curl -X POST "http://localhost:3000/api/excelData" \
         "date_completed": "01.01.2024",
         "insert_date": "01.01.2024",
         "wallet_owner": "TestUser",
+        "group_name": "SingularityNET",
+        "sub_group": "Video Workgroup",
+        "task_labels": "Operations,Facilitating",
+        "task_name": "Facilitating the CIP-1694 workshop",
+        "status": "On Chain",
+        "rewarded": true,
         "ada": 50,
         "mins": 30,
         "agix": 20,
         "usd": 5,
         "wallet_address": "addr_test...",
         "proof_link": "https://example.com/proof",
-        "transaction_id": "txn_123456"
+        "transaction_id": "9dfcecac86f1724..."
       },
       {
         "recognition_id": 67890,
@@ -106,13 +118,19 @@ curl -X POST "http://localhost:3000/api/excelData" \
         "date_completed": "02.01.2024",
         "insert_date": "02.01.2024",
         "wallet_owner": "AnotherUser",
+        "group_name": "SingularityNET",
+        "sub_group": "Video Workgroup",
+        "task_labels": "Operations,Facilitating",
+        "task_name": "Participation in the CIP-1694 workshop",
+        "status": "On Chain",
+        "rewarded": true,
         "ada": 75,
         "mins": 40,
         "agix": 25,
         "usd": 10,
         "wallet_address": "addr_test...",
         "proof_link": "https://example.com/proof",
-        "transaction_id": "txn_789012"
+        "transaction_id": "9dfcecac86f1724..."
       }
     ]
   }'
