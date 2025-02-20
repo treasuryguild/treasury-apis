@@ -1,5 +1,5 @@
 #!/bin/bash
-WIKI_REPO="https://github.com/treasuryguild/treasury-apis.wiki.git"
+WIKI_REPO="https://x-access-token:${GITHUB_TOKEN}@github.com/treasuryguild/treasury-apis.wiki.git"
 LOCAL_WIKI_DIR="wiki"
 
 # Clone the Wiki repo
