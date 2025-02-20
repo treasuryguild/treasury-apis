@@ -1,5 +1,8 @@
 name: Update Wiki
-on: push
+on:
+  push:
+  workflow_dispatch:
+
 jobs:
   update-wiki:
     runs-on: ubuntu-latest
@@ -9,7 +12,6 @@ jobs:
 
       - name: Clone Wiki
         run: git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/treasuryguild/treasury-apis.wiki.git wiki
-
 
       - name: Copy Docs to Wiki
         run: cp -r docs/* wiki/
