@@ -5,6 +5,12 @@ import supabase from '../../lib/supabaseClient';
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 export default async function handler(req, res) {
+  // Verify API key
+  const providedKey = req.headers['api_key'];
+  if (!providedKey || providedKey !== process.env.NEXT_PUBLIC_SERVER_API_KEY) {
+    return res.status(401).json({ error: "Invalid or missing API key." });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
@@ -29,12 +35,13 @@ export default async function handler(req, res) {
     console.log(`📥 Inserting/Updating ${recognitions.length} recognitions into Supabase...`);
 
     // Insert into Supabase
-    const { error } = await supabase.from('external_task_data').upsert(recognitions);
+    const { error } = await supabase
+      .from('external_task_data')
+      .upsert(recognitions, { onConflict: 'recognition_id' });
     if (error) throw error;
 
     console.log(`✅ Sync completed successfully!`);
     res.status(200).json({ message: 'Recognitions updated successfully', records: recognitions.length });
-
   } catch (error) {
     console.error(`❌ Error in syncRecognitions API:`, error);
     res.status(500).json({ error: error.message });
