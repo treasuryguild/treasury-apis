@@ -1,9 +1,3 @@
----
-layout: default
-title: Common Issues
-nav_order: 7
----
-
 # Common Issues and Troubleshooting
 
 ## Authentication Issues

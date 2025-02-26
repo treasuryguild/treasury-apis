@@ -1,9 +1,3 @@
----
-layout: default
-title: Contact Support
-nav_order: 8
----
-
 # Contact Support
 
 ## Quick Support
