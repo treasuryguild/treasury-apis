@@ -1,10 +1,3 @@
----
-layout: default
-title: Zoom Meetings API
-nav_order: 6
-parent: APIs
----
-
 # Zoom Meetings API
 
 ## Overview
