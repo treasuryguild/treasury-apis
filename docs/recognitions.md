@@ -1,6 +1,6 @@
-# API Documentation: `/api/excelData`
+# API Documentation: `/api/recognitions`
 
-This document explains how to use the `/api/excelData` API route for fetching and inserting recognition data.
+This document explains how to use the `/api/recognitions` API route for fetching and inserting recognition data.
 
 ## Authentication
 All requests must include an `api_key` header with a valid API key.
@@ -16,37 +16,37 @@ api_key: YOUR_API_KEY_HERE
 
 ### 🔹 Fetch All Records
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch Limited Records (e.g., first 5)
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData?limit=5" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions?limit=5" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Recognition ID
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData?recognition_id=12345" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions?recognition_id=12345" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Task ID
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData?task_id=1011" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions?task_id=1011" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Wallet Owner (Partial Match Allowed)
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData?wallet_owner=TestUser" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions?wallet_owner=TestUser" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Date Range (Format: DD.MM.YYYY)
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/excelData?start_date=01.01.2024&end_date=01.02.2024" \
+curl -X GET "https://treasury-apis.netlify.app/api/recognitions?start_date=01.01.2024&end_date=01.02.2024" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
@@ -56,7 +56,7 @@ curl -X GET "https://treasury-apis.netlify.app/api/excelData?start_date=01.01.20
 
 ### 🔹 Insert a Single Record
 ```bash
-curl -X POST "http://localhost:3000/api/excelData" \
+curl -X POST "http://localhost:3000/api/recognitions" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ curl -X POST "http://localhost:3000/api/excelData" \
 
 ### 🔹 Insert Multiple Records
 ```bash
-curl -X POST "http://localhost:3000/api/excelData" \
+curl -X POST "http://localhost:3000/api/recognitions" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
