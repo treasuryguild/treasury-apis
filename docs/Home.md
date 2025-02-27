@@ -6,8 +6,9 @@ Welcome to the API documentation. Here you'll find comprehensive guides and docu
 
 ## Quick Navigation
 
-- [Excel Database API (Recognitions)](https://github.com/treasuryguild/treasury-apis/wiki/excelData)
+- [Recognitions API](https://github.com/treasuryguild/treasury-apis/wiki/recognitions)
 - [Wallet Collector API](https://github.com/treasuryguild/treasury-apis/wiki/wallets)
+- [Labels API](https://github.com/treasuryguild/treasury-apis/wiki/labels)
 - [Contributors API](https://github.com/treasuryguild/treasury-apis/wiki/contributors)
 - [Zoom API](https://github.com/treasuryguild/treasury-apis/wiki/zoom)
 - [GitHub Project API](https://github.com/treasuryguild/treasury-apis/wiki/github-project-api)
