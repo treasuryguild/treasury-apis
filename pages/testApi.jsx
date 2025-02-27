@@ -27,7 +27,7 @@ export default function TestApiPage() {
   const fetchLabels = async (query = "") => {
     setMessage("Fetching labels...");
     try {
-      const response = await fetch(`/api/treasury_labels${query ? `?${query}` : ""}`, {
+      const response = await fetch(`/api/labels${query ? `?${query}` : ""}`, {
         method: "GET",
         headers: { 'api_key': API_KEY }
       });
@@ -104,7 +104,7 @@ export default function TestApiPage() {
 
       console.log("📤 Sending label payload:", payload);
 
-      const response = await fetch("/api/treasury_labels", {
+      const response = await fetch("/api/labels", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",

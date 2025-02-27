@@ -1,6 +1,6 @@
-# API Documentation: `/api/treasury_labels`
+# API Documentation: `/api/labels`
 
-This document explains how to use the `/api/treasury_labels` API route for fetching and inserting label data.
+This document explains how to use the `/api/labels` API route for fetching and inserting label data.
 
 ## Authentication
 All requests must include an `api_key` header with a valid API key.
@@ -16,19 +16,19 @@ api_key: YOUR_API_KEY_HERE
 
 ### 🔹 Fetch All Labels
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/treasury_labels" \
+curl -X GET "https://treasury-apis.netlify.app/api/labels" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch Limited Labels (e.g., first 5)
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/treasury_labels?limit=5" \
+curl -X GET "https://treasury-apis.netlify.app/api/labels?limit=5" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
 ### 🔹 Fetch by Label (Partial Match Allowed)
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/treasury_labels?label=Test" \
+curl -X GET "https://treasury-apis.netlify.app/api/labels?label=Test" \
   -H "api_key: YOUR_API_KEY_HERE"
 ```
 
@@ -40,7 +40,7 @@ When inserting labels, you can provide either a comma-separated string or an arr
 
 ### 🔹 Insert New Labels (Using Comma-Separated String)
 ```bash
-curl -X POST "https://treasury-apis.netlify.app/api/treasury_labels" \
+curl -X POST "https://treasury-apis.netlify.app/api/labels" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -50,7 +50,7 @@ curl -X POST "https://treasury-apis.netlify.app/api/treasury_labels" \
 
 ### 🔹 Insert New Labels (Using an Array)
 ```bash
-curl -X POST "https://treasury-apis.netlify.app/api/treasury_labels" \
+curl -X POST "https://treasury-apis.netlify.app/api/labels" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
