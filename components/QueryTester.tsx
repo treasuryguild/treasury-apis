@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import type { ApiResponse, QueryConfig } from '../types/recognition';
 
-const API_KEY = process.env.NEXT_PUBLIC_SERVER_API_KEY; 
+const API_KEY = process.env.NEXT_PUBLIC_SERVER_API_KEY;
 const PROJECT_ID = '722294ef-c9e4-4b2f-8779-a3f7caf4f28d';
 
 // Helper function to format date as dd.mm.yy
@@ -37,10 +37,11 @@ const QueryTester: React.FC = () => {
       const actualQuery = typeof queryParams === 'function' ? queryParams() : queryParams;
 
       // Set up headers and URL based on endpoint
-      switch(endpoint) {
+      switch (endpoint) {
         case 'recognitions':
           headers = {
-            'api-key': API_KEY,
+            'Content-Type': 'application/json',
+            'api_key': API_KEY,
             'project-id': PROJECT_ID
           };
           url = `/api/recognitions${actualQuery}`;
@@ -48,28 +49,30 @@ const QueryTester: React.FC = () => {
         case 'contributors':
         case 'gwallets':
           headers = {
+            'Content-Type': 'application/json',
             'api_key': API_KEY
           };
           url = endpoint === 'contributors' ? '/api/contributors' : '/api/getGWallets';
           break;
         case 'zoom-meetings':
           headers = {
-            'api-key': API_KEY
+            'Content-Type': 'application/json',
+            'api_key': API_KEY
           };
           url = `/api/zoom-meetings${actualQuery}`;
           break;
       }
 
       const response = await fetch(url, { headers });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Set data based on endpoint
-      switch(endpoint) {
+      switch (endpoint) {
         case 'recognitions':
           setResults(data);
           setContributorsData(null);
@@ -177,15 +180,15 @@ const QueryTester: React.FC = () => {
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '20px', color: 'white' }}>API Query Tester</h1>
-      
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
         gap: '10px',
-        marginBottom: '20px' 
+        marginBottom: '20px'
       }}>
         {queries.map((q, index) => (
-          <button 
+          <button
             key={index}
             onClick={() => fetchData(q.query, q.endpoint)}
             disabled={loading}
@@ -211,9 +214,9 @@ const QueryTester: React.FC = () => {
       )}
 
       {error && (
-        <div style={{ 
-          color: 'red', 
-          padding: '10px', 
+        <div style={{
+          color: 'red',
+          padding: '10px',
           border: '1px solid red',
           borderRadius: '4px',
           marginBottom: '20px'
@@ -223,7 +226,7 @@ const QueryTester: React.FC = () => {
       )}
 
       {results && (
-        <div style={{ 
+        <div style={{
           border: '1px solid #ccc',
           borderRadius: '4px',
           padding: '20px',
@@ -231,10 +234,10 @@ const QueryTester: React.FC = () => {
           color: 'white'
         }}>
           <h2 style={{ marginBottom: '10px' }}>Recognition Results</h2>
-          
+
           <div style={{ marginBottom: '20px' }}>
             <h3>Metadata:</h3>
-            <pre style={{ 
+            <pre style={{
               backgroundColor: 'black',
               padding: '10px',
               borderRadius: '4px',
@@ -244,11 +247,11 @@ const QueryTester: React.FC = () => {
               {JSON.stringify(results.metadata, null, 2)}
             </pre>
           </div>
-          
+
           <div>
             <h3>Total Recognitions: {results.recognitions.length}</h3>
-            <div style={{ 
-              maxHeight: '400px', 
+            <div style={{
+              maxHeight: '400px',
               overflow: 'auto',
               backgroundColor: 'black',
               padding: '10px',
@@ -264,7 +267,7 @@ const QueryTester: React.FC = () => {
       )}
 
       {contributorsData && (
-        <div style={{ 
+        <div style={{
           border: '1px solid #ccc',
           borderRadius: '4px',
           padding: '20px',
@@ -274,8 +277,8 @@ const QueryTester: React.FC = () => {
         }}>
           <h2 style={{ marginBottom: '10px' }}>Contributors Results</h2>
           <h3>Total Contributors: {contributorsData.length}</h3>
-          <div style={{ 
-            maxHeight: '400px', 
+          <div style={{
+            maxHeight: '400px',
             overflow: 'auto',
             backgroundColor: 'black',
             padding: '10px',
@@ -290,7 +293,7 @@ const QueryTester: React.FC = () => {
       )}
 
       {walletsData && (
-        <div style={{ 
+        <div style={{
           border: '1px solid #ccc',
           borderRadius: '4px',
           padding: '20px',
@@ -300,8 +303,8 @@ const QueryTester: React.FC = () => {
         }}>
           <h2 style={{ marginBottom: '10px' }}>Wallet Addresses Results</h2>
           <h3>Total Wallets: {walletsData.length}</h3>
-          <div style={{ 
-            maxHeight: '400px', 
+          <div style={{
+            maxHeight: '400px',
             overflow: 'auto',
             backgroundColor: 'black',
             padding: '10px',
@@ -316,7 +319,7 @@ const QueryTester: React.FC = () => {
       )}
 
       {zoomMeetingsData && (
-        <div style={{ 
+        <div style={{
           border: '1px solid #ccc',
           borderRadius: '4px',
           padding: '20px',
@@ -326,8 +329,8 @@ const QueryTester: React.FC = () => {
         }}>
           <h2 style={{ marginBottom: '10px' }}>Zoom Meetings Results</h2>
           <h3>Total Meetings: {zoomMeetingsData.meetings.length}</h3>
-          <div style={{ 
-            maxHeight: '400px', 
+          <div style={{
+            maxHeight: '400px',
             overflow: 'auto',
             backgroundColor: 'black',
             padding: '10px',

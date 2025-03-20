@@ -16,12 +16,12 @@ export default function TestGitHubProjectApi() {
         throw new Error('API key is missing');
       }
 
-      const owner = 'SingularityNET-Archive'; 
+      const owner = 'SingularityNET-Archive';
       const projectNumber = '1';
 
       // Construct a Headers object so TypeScript knows exactly what's going on
       const headers = new Headers();
-      headers.set('api-key', apiKey);
+      headers.set('api_key', apiKey);
 
       const res = await fetch(
         `/api/github/project-details?owner=${owner}&projectNumber=${projectNumber}&isOrg=true`,
@@ -50,12 +50,12 @@ export default function TestGitHubProjectApi() {
         throw new Error('API key is missing');
       }
 
-      const owner = 'SingularityNet-Ambassador-Program'; 
+      const owner = 'SingularityNet-Ambassador-Program';
       const repo = 'GitHub-PBL-WG';
       const projectNumber = '14';
 
       const headers = new Headers();
-      headers.set('api-key', apiKey);
+      headers.set('api_key', apiKey);
 
       const res = await fetch(
         `/api/github/project-details?owner=${owner}&repo=${repo}&projectNumber=${projectNumber}&isOrg=false`,

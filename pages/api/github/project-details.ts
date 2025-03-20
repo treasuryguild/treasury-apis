@@ -11,7 +11,7 @@ const graphqlWithAuth = graphql.defaults({
 
 // 2. Define a helper to validate API key
 function validateApiKey(req: NextApiRequest) {
-  const apiKey = req.headers['api-key'];
+  const apiKey = req.headers['api_key'];
   const validApiKey = process.env.SERVER_API_KEY;
 
   if (!apiKey || apiKey !== validApiKey) {

@@ -1,16 +1,16 @@
 // pages/api/recognitions/index.js
 import supabase from '../../../lib/supabaseClient';
-import { 
-  transformTransactionData, 
+import {
+  transformTransactionData,
   filterRecognitions
 } from '../../../utils/transformRecognitions';
 
 // Add API key validation middleware
 const validateApiKey = (req) => {
-  const apiKey = req.headers['api-key'];
+  const apiKey = req.headers['api_key'];
   // Replace this with your actual API key validation logic
   const validApiKey = process.env.SERVER_API_KEY;
-  
+
   if (!apiKey || apiKey !== validApiKey) {
     throw new Error('Invalid API key');
   }
@@ -32,9 +32,9 @@ export default async function handler(req, res) {
 
     // Get project_id from headers
     const projectId = req.headers['project-id'];
-    
+
     if (!projectId) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Bad Request',
         message: 'Project ID is required in headers (project-id)'
       });
@@ -75,10 +75,10 @@ export default async function handler(req, res) {
 
     // Transform transactions into recognitions
     const transformedData = transformTransactionData(rawData);
-    
+
     // Get all recognitions
     const allRecognitions = transformedData.flatMap(transaction => transaction.recognitions);
-    
+
     // Enhanced logging
     console.log('Total recognitions before filtering:', allRecognitions.length);
     if (contributor_id) {
@@ -129,16 +129,16 @@ export default async function handler(req, res) {
       code: error.code,
       details: error.details
     });
-    
+
     // Handle specific errors
     if (error.message === 'Invalid API key') {
-      return res.status(401).json({ 
+      return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid API key'
       });
     }
-    
-    return res.status(500).json({ 
+
+    return res.status(500).json({
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? {
         message: error.message,

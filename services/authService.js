@@ -2,9 +2,9 @@
 import axios from 'axios';
 
 export const validateApiKey = (req) => {
-  const apiKey = req.headers['api-key'];
+  const apiKey = req.headers['api_key'];
   const validApiKey = process.env.SERVER_API_KEY;
-  
+
   if (!apiKey || apiKey !== validApiKey) {
     throw new Error('Invalid API key');
   }
