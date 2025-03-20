@@ -1,6 +1,6 @@
 # GitHub Project Details API Documentation
 
-This API route fetches details for a GitHub Project (ProjectV2) using the GitHub GraphQL API. Depending on the provided parameters, it will query for either an organization-level project or a repository-level project. All requests require a valid API key.
+This API route fetches details for a GitHub Project (ProjectV2) using the GitHub GraphQL API. While the API supports both organization-level and repository-level projects, the most common use case is for repository-level projects. All requests require a valid API key.
 
 ---
 
@@ -27,7 +27,7 @@ api_key: YOUR_API_KEY
 
 - `owner` (string):  
   - For an organization-level project, this is the organization login.
-  - For a repository-level project, this is the repository owner's username.
+  - For a repository-level project (most common), this is the repository owner's username.
 
 - `projectNumber` (number):  
   The project number (must be convertible to an integer).
@@ -39,8 +39,20 @@ api_key: YOUR_API_KEY
   - If omitted or not `"true"`, the API treats the request as targeting a repository-level project.
 
 - `repo` (string):  
-  - **Required for repository-level projects.**
+  - **Required for repository-level projects (most common setup).**
   - Represents the repository name.
+  - This is the standard setup when you create a project board directly in a repository.
+
+---
+
+## Important Note About Project Setup
+
+When you create a project board directly in a repository (which is the most common scenario), you must use the repository-level project setup. This means you'll need to provide:
+- The repository owner (`owner`)
+- The repository name (`repo`)
+- The project number (`projectNumber`)
+
+Organization-level projects (using `isOrg=true`) are less common and typically used for organization-wide initiatives.
 
 ---
 
@@ -154,5 +166,6 @@ The API returns appropriate HTTP status codes and error messages in case of issu
 - The API uses a GitHub GraphQL client initialized with a token from the `GITHUB_TOKEN` environment variable.
 - The `api_key` header is validated against the value set in `SERVER_API_KEY`.
 - The project data is processed to map field values by name, making it easier to consume on the client side.
+- For more information about GitHub's REST API, see the [official documentation](https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#http-method).
 
 Happy coding!
