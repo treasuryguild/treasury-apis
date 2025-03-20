@@ -12,11 +12,11 @@ GET /api/zoom-meetings
 The API requires authentication using an API key header.
 
 ### Required Headers
-- `api-key`: Your API authentication key (Required)
+- `api_key`: Your API authentication key (Required)
 
 Example:
 ```
-api-key: your_api_key_here
+api_key: your_api_key_here
 ```
 
 ## Query Parameters
@@ -204,7 +204,7 @@ The API implements rate limiting when fetching participant data from Zoom to avo
 ```bash
 curl -X GET \
   'https://treasury-apis.netlify.app/api/zoom-meetings?startDate=01.01.24&endDate=31.01.24' \
-  -H 'api-key: your_api_key_here'
+  -H 'api_key: your_api_key_here'
 ```
 
 ### JavaScript (Fetch)
@@ -214,7 +214,7 @@ const response = await fetch(
   {
     method: 'GET',
     headers: {
-      'api-key': 'your_api_key_here'
+      'api_key': 'your_api_key_here'
     }
   }
 );
@@ -227,7 +227,7 @@ const data = await response.json();
 import requests
 
 headers = {
-    'api-key': 'your_api_key_here'
+    'api_key': 'your_api_key_here'
 }
 
 response = requests.get(

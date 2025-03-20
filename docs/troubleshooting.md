@@ -7,15 +7,9 @@
 **Solution**: 
 1. Verify your API key is correct
 2. Check header format:
-   - Use `api-key` for Contributors and Wallets APIs
-   - Use `api-key` and `project-id` for Recognitions API
+   - Use `api_key` for Contributors and Wallets APIs
+   - Use `api_key` for Recognitions API
 3. Contact andretreasuryguild if issues persist
-
-### Missing Project ID
-**Problem**: "Project ID is required" error
-**Solution**:
-1. Add `project-id` header
-2. Use correct project ID for SNet Ambassador program: `722294ef-c9e4-4b2f-8779-a3f7caf4f28d`
 
 ## Data Issues
 

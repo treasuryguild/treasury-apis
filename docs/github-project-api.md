@@ -9,7 +9,7 @@ This API route fetches details for a GitHub Project (ProjectV2) using the GitHub
 Include the API key in the request headers:
 
 ```
-api-key: YOUR_API_KEY
+api_key: YOUR_API_KEY
 ```
 
 ---
@@ -27,7 +27,7 @@ api-key: YOUR_API_KEY
 
 - `owner` (string):  
   - For an organization-level project, this is the organization login.
-  - For a repository-level project, this is the repository owner’s username.
+  - For a repository-level project, this is the repository owner's username.
 
 - `projectNumber` (number):  
   The project number (must be convertible to an integer).
@@ -50,21 +50,21 @@ api-key: YOUR_API_KEY
 
 ```bash
 curl -X GET "https://treasury-apis.netlify.app/api/github-project?owner=ORG_NAME&projectNumber=1&isOrg=true" \
-  -H "api-key: YOUR_API_KEY"
+  -H "api_key: YOUR_API_KEY"
 ```
 
 ### 2. Fetch Repository-Level Project (GET)
 
 ```bash
 curl -X GET "https://treasury-apis.netlify.app/api/github-project?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=2" \
-  -H "api-key: YOUR_API_KEY"
+  -H "api_key: YOUR_API_KEY"
 ```
 
 ### 3. Fetch Organization-Level Project (POST)
 
 ```bash
 curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
-  -H "api-key: YOUR_API_KEY" \
+  -H "api_key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
         "owner": "ORG_NAME",
@@ -77,7 +77,7 @@ curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
 
 ```bash
 curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
-  -H "api-key: YOUR_API_KEY" \
+  -H "api_key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
         "owner": "USERNAME",
@@ -152,7 +152,7 @@ The API returns appropriate HTTP status codes and error messages in case of issu
 ## Notes
 
 - The API uses a GitHub GraphQL client initialized with a token from the `GITHUB_TOKEN` environment variable.
-- The `api-key` header is validated against the value set in `SERVER_API_KEY`.
+- The `api_key` header is validated against the value set in `SERVER_API_KEY`.
 - The project data is processed to map field values by name, making it easier to consume on the client side.
 
 Happy coding!
