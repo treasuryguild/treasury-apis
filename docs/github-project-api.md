@@ -61,21 +61,21 @@ Organization-level projects (using `isOrg=true`) are less common and typically u
 ### 1. Fetch Organization-Level Project (GET)
 
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/github-project?owner=ORG_NAME&projectNumber=1&isOrg=true" \
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true" \
   -H "api_key: YOUR_API_KEY"
 ```
 
 ### 2. Fetch Repository-Level Project (GET)
 
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/github-project?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=2" \
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=2" \
   -H "api_key: YOUR_API_KEY"
 ```
 
 ### 3. Fetch Organization-Level Project (POST)
 
 ```bash
-curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
   -H "api_key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -88,7 +88,7 @@ curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
 ### 4. Fetch Repository-Level Project (POST)
 
 ```bash
-curl -X POST "https://treasury-apis.netlify.app/api/github-project" \
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
   -H "api_key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
