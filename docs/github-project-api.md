@@ -27,7 +27,9 @@ api_key: YOUR_API_KEY
 
 - `owner` (string):  
   - For an organization-level project, this is the organization login.
-  - For a repository-level project (most common), this is the repository owner's username.
+  - For a repository-level project (most common), this can be either:
+    - A user's username (for repositories owned by individual users)
+    - An organization's name (for repositories owned by organizations)
 
 - `projectNumber` (number):  
   The project number (must be convertible to an integer).
@@ -42,6 +44,7 @@ api_key: YOUR_API_KEY
   - **Required for repository-level projects (most common setup).**
   - Represents the repository name.
   - This is the standard setup when you create a project board directly in a repository.
+  - The repository can be owned by either a user or an organization (specified in the `owner` parameter).
 
 ---
 
@@ -68,7 +71,12 @@ curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=
 ### 2. Fetch Repository-Level Project (GET)
 
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=2" \
+# For a repository owned by a user
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=1" \
+  -H "api_key: YOUR_API_KEY"
+
+# For a repository owned by an organization
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&repo=REPOSITORY_NAME&projectNumber=1" \
   -H "api_key: YOUR_API_KEY"
 ```
 
@@ -88,11 +96,22 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
 ### 4. Fetch Repository-Level Project (POST)
 
 ```bash
+# For a repository owned by a user
 curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
   -H "api_key: YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
         "owner": "USERNAME",
+        "repo": "REPOSITORY_NAME",
+        "projectNumber": 2
+      }'
+
+# For a repository owned by an organization
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
+  -H "api_key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "owner": "ORG_NAME",
         "repo": "REPOSITORY_NAME",
         "projectNumber": 2
       }'
