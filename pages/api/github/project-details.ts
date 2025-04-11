@@ -66,6 +66,9 @@ async function fetchProjectData(
             title
             body
             number
+            createdAt
+            updatedAt
+            closedAt
             milestone {
               title
             }
