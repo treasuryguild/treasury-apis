@@ -1,6 +1,6 @@
 # GitHub Project Details API Documentation
 
-This API route fetches details for an **organization-level** GitHub Project (ProjectV2) using the GitHub GraphQL API. All requests require a valid API key.
+This API route fetches details for a GitHub Project (ProjectV2) using the GitHub GraphQL API. All requests require a valid API key.
 
 ---
 
@@ -42,7 +42,7 @@ api_key: YOUR_API_KEY
 
 ## Important Note About the Project Setup
 
-This API route is designed to work **exclusively** with organization-level projects. To use this API, supply the following:
+To use this API, supply the following:
 
 - The organization name (`owner`)
 - The project number (`projectNumber`)
@@ -155,6 +155,5 @@ The API returns appropriate HTTP status codes and error messages in case of issu
 - The `api_key` header is validated against the value set in `SERVER_API_KEY`.
 - The project data is processed to map field values by name, making it easier to consume on the client side.
 - When using the `status` parameter, only items matching the specified status will be returned in the response.
-- **This API currently supports only organization-level projects.** Future updates may include additional project types if needed.
 
 Happy coding!
