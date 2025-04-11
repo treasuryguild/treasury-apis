@@ -192,7 +192,9 @@ async function fetchProjectData(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     validateApiKey(req);
-    let { owner, repo, projectNumber, isOrg } = req.query;
+
+    // Read required parameters
+    let { owner, repo, projectNumber, isOrg, status } = req.query;
 
     // Allow overriding via POST body
     if (req.method === 'POST') {
@@ -201,6 +203,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (body.repo) repo = body.repo;
       if (body.projectNumber) projectNumber = body.projectNumber;
       if (body.isOrg !== undefined) isOrg = body.isOrg;
+      if (body.status) status = body.status;
     }
 
     if (!owner || !projectNumber) {
@@ -216,7 +219,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const rawProjectData = await fetchProjectData(graphqlWithAuth, useOrg, variables);
     const processed = processProjectData(rawProjectData);
-    return res.status(200).json({ data: processed });
+
+    // Apply filter if the "status" parameter is provided
+    let filteredItems = processed.items;
+    if (status) {
+      // Filter tasks by checking if the "Status" field's name matches the requested filter value
+      filteredItems = filteredItems.filter(
+        (item: any) => item.fieldValues?.Status?.name === status
+      );
+    }
+
+    return res.status(200).json({ data: { title: processed.title, fields: processed.fields, items: filteredItems } });
   } catch (err: any) {
     if (err.message === 'Invalid API key') {
       return res.status(401).json({ error: err.message });
