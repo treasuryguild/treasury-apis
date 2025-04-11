@@ -48,15 +48,37 @@ function processProjectData(project: any) {
   };
 }
 
+// Add this new function after the processProjectData function
+async function fetchAllProjectItems(graphqlWithAuth: any, query: string, variables: any) {
+  let allItems: any[] = [];
+  let hasNextPage = true;
+  let cursor = null;
+
+  while (hasNextPage) {
+    const data: any = await graphqlWithAuth(query, {
+      ...variables,
+      cursor,
+    });
+
+    const projectData = data?.organization?.projectV2 || data?.repository?.projectV2;
+    const items = projectData?.items?.nodes || [];
+    allItems = [...allItems, ...items];
+
+    hasNextPage = projectData?.items?.pageInfo?.hasNextPage || false;
+    cursor = projectData?.items?.pageInfo?.endCursor;
+  }
+
+  return allItems;
+}
+
+// Modify the handler function to use the new pagination
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // 4. Validate API key at the start
     validateApiKey(req);
 
     const { method } = req;
     let { owner, repo, projectNumber, isOrg } = req.query;
 
-    // For POST, optionally read them from req.body
     if (method === 'POST') {
       const body = req.body;
       if (body.owner) owner = body.owner;
@@ -72,9 +94,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const projectNum = parseInt(projectNumber as string, 10);
 
     if (isOrg === 'true') {
-      // Organization-level project
       const query = `
-        query ($orgName: String!, $projectNumber: Int!) {
+        query ($orgName: String!, $projectNumber: Int!, $cursor: String) {
           organization(login: $orgName) {
             projectV2(number: $projectNumber) {
               title
@@ -86,7 +107,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   }
                 }
               }
-              items(first: 100) {
+              items(first: 100, after: $cursor) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
                 nodes {
                   content {
                     ... on Issue {
@@ -107,6 +132,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         }
                       }
                       state
+                      author {
+                        login
+                      }
                     }
                   }
                   fieldValues(first: 10) {
@@ -166,17 +194,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       const projectData = data?.organization?.projectV2;
-      const processed = processProjectData(projectData);
+      const allItems = await fetchAllProjectItems(graphqlWithAuth, query, {
+        orgName: owner,
+        projectNumber: projectNum,
+      });
+
+      const processed = {
+        title: projectData.title,
+        fields: projectData.fields.nodes,
+        items: allItems.map((item: any) => {
+          const fieldValuesMap = item.fieldValues.nodes.reduce((acc: any, fieldValue: any) => {
+            const fieldName = fieldValue?.field?.name;
+            if (fieldName) {
+              acc[fieldName] = fieldValue;
+            }
+            return acc;
+          }, {});
+
+          return {
+            ...item.content,
+            fieldValues: fieldValuesMap,
+          };
+        }),
+      };
 
       return res.status(200).json({ data: processed });
     } else {
-      // Repository-level project
       if (!repo) {
         return res.status(400).json({ error: 'Missing repo for repository-level project.' });
       }
 
       const query = `
-        query ($owner: String!, $repo: String!, $projectNumber: Int!) {
+        query ($owner: String!, $repo: String!, $projectNumber: Int!, $cursor: String) {
           repository(owner: $owner, name: $repo) {
             projectV2(number: $projectNumber) {
               title
@@ -188,7 +237,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   }
                 }
               }
-              items(first: 100) {
+              items(first: 100, after: $cursor) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
                 nodes {
                   content {
                     ... on Issue {
@@ -209,6 +262,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         }
                       }
                       state
+                      author {
+                        login
+                      }
                     }
                   }
                   fieldValues(first: 10) {
@@ -269,13 +325,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       const projectData = data?.repository?.projectV2;
-      const processed = processProjectData(projectData);
+      const allItems = await fetchAllProjectItems(graphqlWithAuth, query, {
+        owner,
+        repo,
+        projectNumber: projectNum,
+      });
+
+      const processed = {
+        title: projectData.title,
+        fields: projectData.fields.nodes,
+        items: allItems.map((item: any) => {
+          const fieldValuesMap = item.fieldValues.nodes.reduce((acc: any, fieldValue: any) => {
+            const fieldName = fieldValue?.field?.name;
+            if (fieldName) {
+              acc[fieldName] = fieldValue;
+            }
+            return acc;
+          }, {});
+
+          return {
+            ...item.content,
+            fieldValues: fieldValuesMap,
+          };
+        }),
+      };
 
       return res.status(200).json({ data: processed });
     }
   } catch (err: any) {
     if (err.message === 'Invalid API key') {
-      // Return a 401 if it's an invalid API key
       return res.status(401).json({ error: err.message });
     }
     console.error('Error in GitHub project details API:', err);
