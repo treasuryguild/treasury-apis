@@ -8,6 +8,7 @@ import SnetWorkspacesTestButton from '../components/SnetWorkspacesTestButton';
 import SwarmWorkspacesTestButton from '../components/SwarmWorkspacesTestButton';
 import TransactionIdTestButton from '../components/TransactionIdTestButton';
 import TestGitHubProjectApi from "@/components/TestGitHubProjectApi";
+import TestGitHubOrgApi from "@/components/TestGitHubOrgApi";
 import ExcelDataFetcher from '../utils/ExcelDataFetcher';
 import QueryTester from '../components/QueryTester';
 
@@ -73,6 +74,7 @@ const Testing: NextPage = () => {
           <>
             <div>
               <TestGitHubProjectApi />
+              <TestGitHubOrgApi />
               <TestDataButton testData={testData} />
               <TransactionIdTestButton />
               <SnetWorkspacesTestButton />
