@@ -1,13 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { graphql } from '@octokit/graphql';
 
-// 1. Configure the GitHub GraphQL client using the server token
+// Configure the GitHub GraphQL client using the server token
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const graphqlWithAuth = graphql.defaults({
   headers: { authorization: `token ${GITHUB_TOKEN}` },
 });
 
-// 2. Validate API key
+// Validate API key
 function validateApiKey(req: NextApiRequest) {
   const apiKey = req.headers['api_key'];
   const validApiKey = process.env.SERVER_API_KEY;
@@ -16,7 +16,7 @@ function validateApiKey(req: NextApiRequest) {
   }
 }
 
-// 3. A helper to process and structure the project data (items, fields, title)
+// Helper to process and structure the project data (items, fields, title)
 function processProjectData(project: any) {
   if (!project) {
     return { error: 'No project found' };
@@ -37,14 +37,13 @@ function processProjectData(project: any) {
 }
 
 /**
- * 4. Fetch project data (both organization and repository) with pagination
+ * Fetch project data for an organization with pagination.
  */
 async function fetchProjectData(
   graphqlWithAuth: any,
-  isOrg: boolean,
   variables: any
 ) {
-  // Define a fragment that holds the shared parts of the query
+  // Fragment for shared parts of the query
   const PROJECT_FRAGMENT = `
     title
     fields(first: 20) {
@@ -136,26 +135,16 @@ async function fetchProjectData(
     }
   `;
 
-  // Build the full query based on the type (organization or repository)
-  const query = isOrg
-    ? `
-      query ($orgName: String!, $projectNumber: Int!, $cursor: String) {
-        organization(login: $orgName) {
-          projectV2(number: $projectNumber) {
-            ${PROJECT_FRAGMENT}
-          }
+  // Organization-only query
+  const query = `
+    query ($orgName: String!, $projectNumber: Int!, $cursor: String) {
+      organization(login: $orgName) {
+        projectV2(number: $projectNumber) {
+          ${PROJECT_FRAGMENT}
         }
       }
-    `
-    : `
-      query ($owner: String!, $repo: String!, $projectNumber: Int!, $cursor: String) {
-        repository(owner: $owner, name: $repo) {
-          projectV2(number: $projectNumber) {
-            ${PROJECT_FRAGMENT}
-          }
-        }
-      }
-    `;
+    }
+  `;
 
   let allItems: any[] = [];
   let hasNextPage = true;
@@ -164,11 +153,9 @@ async function fetchProjectData(
   let projectFields: any[] = [];
 
   while (hasNextPage) {
-    // Note: the same query is used with a different cursor for pagination.
+    // Fetch the paginated data using the current cursor
     const data: any = await graphqlWithAuth(query, { ...variables, cursor });
-    const projectData = isOrg
-      ? data?.organization?.projectV2
-      : data?.repository?.projectV2;
+    const projectData = data?.organization?.projectV2;
     if (!projectData) {
       throw new Error('No project data found');
     }
@@ -188,21 +175,19 @@ async function fetchProjectData(
   return { title: projectTitle, fields: projectFields, items: allItems };
 }
 
-// 5. The unified API route handler
+// Unified API route handler
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     validateApiKey(req);
 
     // Read required parameters
-    let { owner, repo, projectNumber, isOrg, status } = req.query;
+    let { owner, projectNumber, status } = req.query;
 
     // Allow overriding via POST body
     if (req.method === 'POST') {
       const body = req.body;
       if (body.owner) owner = body.owner;
-      if (body.repo) repo = body.repo;
       if (body.projectNumber) projectNumber = body.projectNumber;
-      if (body.isOrg !== undefined) isOrg = body.isOrg;
       if (body.status) status = body.status;
     }
 
@@ -210,14 +195,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Missing owner or projectNumber.' });
     }
     const projectNum = parseInt(projectNumber as string, 10);
-    const useOrg = isOrg === 'true';
+    const variables = { orgName: owner, projectNumber: projectNum };
 
-    // Define variables based on the type
-    const variables = useOrg
-      ? { orgName: owner, projectNumber: projectNum }
-      : { owner, repo, projectNumber: projectNum };
-
-    const rawProjectData = await fetchProjectData(graphqlWithAuth, useOrg, variables);
+    const rawProjectData = await fetchProjectData(graphqlWithAuth, variables);
     const processed = processProjectData(rawProjectData);
 
     // Apply filter if the "status" parameter is provided
@@ -229,7 +209,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       );
     }
 
-    return res.status(200).json({ data: { title: processed.title, fields: processed.fields, items: filteredItems } });
+    return res.status(200).json({
+      data: {
+        title: processed.title,
+        fields: processed.fields,
+        items: filteredItems,
+      },
+    });
   } catch (err: any) {
     if (err.message === 'Invalid API key') {
       return res.status(401).json({ error: err.message });

@@ -4,9 +4,10 @@ export default function TestGitHubProjectApi() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If this might be undefined, let's handle it carefully
+  // Use the API key from the environment variable
   const apiKey = process.env.NEXT_PUBLIC_SERVER_API_KEY;
 
+  // Fetch organization project data using owner and projectNumber
   const handleFetchOrgProject = async () => {
     try {
       setLoading(true);
@@ -16,15 +17,14 @@ export default function TestGitHubProjectApi() {
         throw new Error('API key is missing');
       }
 
-      const owner = 'SingularityNET-Archive';
+      const owner = 'SingularityNet-Ambassador-Program';
       const projectNumber = '1';
 
-      // Construct a Headers object so TypeScript knows exactly what's going on
       const headers = new Headers();
       headers.set('api_key', apiKey);
 
       const res = await fetch(
-        `/api/github/project-details?owner=${owner}&projectNumber=${projectNumber}&isOrg=true`,
+        `/api/github/project-details?owner=${owner}&projectNumber=${projectNumber}`,
         { headers }
       );
 
@@ -41,7 +41,8 @@ export default function TestGitHubProjectApi() {
     }
   };
 
-  const handleFetchRepoProject = async () => {
+  // Previously "Fetch Repo Project" function now uses the organization endpoint since repo projects are not supported
+  const handleFetchBigOrgProject = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -50,15 +51,15 @@ export default function TestGitHubProjectApi() {
         throw new Error('API key is missing');
       }
 
-      const owner = 'SingularityNet-Ambassador-Program';
-      const repo = 'GitHub-PBL-WG';
-      const projectNumber = '14';
+      const owner = 'SingularityNET-Archive';
+      const projectNumber = '1';
 
       const headers = new Headers();
       headers.set('api_key', apiKey);
 
+      // Fetch organization project data (no repo parameter)
       const res = await fetch(
-        `/api/github/project-details?owner=${owner}&repo=${repo}&projectNumber=${projectNumber}&isOrg=false`,
+        `/api/github/project-details?owner=${owner}&projectNumber=${projectNumber}`,
         { headers }
       );
 
@@ -67,7 +68,7 @@ export default function TestGitHubProjectApi() {
       }
 
       const data = await res.json();
-      console.log('Repo Project Data:', data);
+      console.log('Repo (Org) Project Data:', data);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -75,6 +76,7 @@ export default function TestGitHubProjectApi() {
     }
   };
 
+  // Fetch project data with a status filter, using organization-based query parameters only
   const handleFetchWithStatus = async () => {
     try {
       setLoading(true);
@@ -85,7 +87,6 @@ export default function TestGitHubProjectApi() {
       }
 
       const owner = 'SingularityNet-Ambassador-Program';
-      const repo = 'GitHub-PBL-WG';
       const projectNumber = '14';
       const status = 'Audited';
 
@@ -93,7 +94,7 @@ export default function TestGitHubProjectApi() {
       headers.set('api_key', apiKey);
 
       const res = await fetch(
-        `/api/github/project-details?owner=${owner}&repo=${repo}&projectNumber=${projectNumber}&isOrg=false&status=${status}`,
+        `/api/github/project-details?owner=${owner}&projectNumber=${projectNumber}&status=${status}`,
         { headers }
       );
 
@@ -118,8 +119,8 @@ export default function TestGitHubProjectApi() {
         <button onClick={handleFetchOrgProject} disabled={loading}>
           Fetch Org Project
         </button>
-        <button onClick={handleFetchRepoProject} disabled={loading} style={{ marginLeft: '1rem' }}>
-          Fetch Repo Project
+        <button onClick={handleFetchBigOrgProject} disabled={loading} style={{ marginLeft: '1rem' }}>
+          Fetch Big Org Project
         </button>
         <button onClick={handleFetchWithStatus} disabled={loading} style={{ marginLeft: '1rem' }}>
           Fetch with Status Filter

@@ -1,6 +1,6 @@
 # GitHub Project Details API Documentation
 
-This API route fetches details for a GitHub Project (ProjectV2) using the GitHub GraphQL API. While the API supports both organization-level and repository-level projects, the most common use case is for repository-level projects. All requests require a valid API key.
+This API route fetches details for an **organization-level** GitHub Project (ProjectV2) using the GitHub GraphQL API. All requests require a valid API key.
 
 ---
 
@@ -8,7 +8,7 @@ This API route fetches details for a GitHub Project (ProjectV2) using the GitHub
 
 Include the API key in the request headers:
 
-```
+```http
 api_key: YOUR_API_KEY
 ```
 
@@ -25,43 +25,29 @@ api_key: YOUR_API_KEY
 
 **Required Parameters (via Query String or JSON Body):**
 
-- `owner` (string):  
-  - For an organization-level project, this is the organization login.
-  - For a repository-level project (most common), this can be either:
-    - A user's username (for repositories owned by individual users)
-    - An organization's name (for repositories owned by organizations)
+- **`owner` (string):**  
+  The organization login where the project is hosted.
 
-- `projectNumber` (number):  
+- **`projectNumber` (number):**  
   The project number (must be convertible to an integer).
 
 **Optional Parameters:**
 
-- `isOrg` (string):  
-  - Set to `"true"` to indicate an organization-level project.
-  - If omitted or not `"true"`, the API treats the request as targeting a repository-level project.
-
-- `repo` (string):  
-  - **Required for repository-level projects (most common setup).**
-  - Represents the repository name.
-  - This is the standard setup when you create a project board directly in a repository.
-  - The repository can be owned by either a user or an organization (specified in the `owner` parameter).
-
-- `status` (string):
-  - Filters the project items by their status field value.
-  - Only returns items that match the specified status.
-  - Example values: "In Progress", "Audited", "Completed", etc.
-  - The status value must exactly match the status field value in the project.
+- **`status` (string):**  
+  Filters the project items by their status field value. Only returns items that match the specified status.  
+  Example values: `"In Progress"`, `"Audited"`, `"Completed"`, etc.  
+  The status value must exactly match the status field value in the project.
 
 ---
 
-## Important Note About Project Setup
+## Important Note About the Project Setup
 
-When you create a project board directly in a repository (which is the most common scenario), you must use the repository-level project setup. This means you'll need to provide:
-- The repository owner (`owner`)
-- The repository name (`repo`)
+This API route is designed to work **exclusively** with organization-level projects. To use this API, supply the following:
+
+- The organization name (`owner`)
 - The project number (`projectNumber`)
 
-Organization-level projects (using `isOrg=true`) are less common and typically used for organization-wide initiatives.
+Optionally, you can filter the project items by providing the `status` parameter.
 
 ---
 
@@ -70,31 +56,30 @@ Organization-level projects (using `isOrg=true`) are less common and typically u
 ### 1. Fetch Organization-Level Project (GET)
 
 ```bash
-curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true" \
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1" \
   -H "api_key: YOUR_API_KEY"
 ```
 
-### 2. Fetch Repository-Level Project (GET)
+### 2. Fetch Project with Status Filter (GET)
 
 ```bash
-# For a repository owned by a user
-curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=USERNAME&repo=REPOSITORY_NAME&projectNumber=1" \
-  -H "api_key: YOUR_API_KEY"
-
-# For a repository owned by an organization
-curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&repo=REPOSITORY_NAME&projectNumber=1" \
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&status=Audited" \
   -H "api_key: YOUR_API_KEY"
 ```
 
-### 3. Fetch Project with Status Filter (GET)
+### 3. Fetch Organization-Level Project (POST)
 
 ```bash
-# Filter items by status
-curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&repo=REPOSITORY_NAME&projectNumber=1&status=Audited" \
-  -H "api_key: YOUR_API_KEY"
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
+  -H "api_key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "owner": "ORG_NAME",
+        "projectNumber": 1
+      }'
 ```
 
-### 4. Fetch Organization-Level Project (POST)
+### 4. Fetch Project with Status Filter (POST)
 
 ```bash
 curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
@@ -103,44 +88,6 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
   -d '{
         "owner": "ORG_NAME",
         "projectNumber": 1,
-        "isOrg": "true"
-      }'
-```
-
-### 5. Fetch Repository-Level Project (POST)
-
-```bash
-# For a repository owned by a user
-curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
-  -H "api_key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "owner": "USERNAME",
-        "repo": "REPOSITORY_NAME",
-        "projectNumber": 2
-      }'
-
-# For a repository owned by an organization
-curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
-  -H "api_key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "owner": "ORG_NAME",
-        "repo": "REPOSITORY_NAME",
-        "projectNumber": 2
-      }'
-```
-
-### 6. Fetch Project with Status Filter (POST)
-
-```bash
-curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
-  -H "api_key: YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "owner": "ORG_NAME",
-        "repo": "REPOSITORY_NAME",
-        "projectNumber": 2,
         "status": "Audited"
       }'
 ```
@@ -191,16 +138,10 @@ The API returns appropriate HTTP status codes and error messages in case of issu
   ```
 
 - **400 Bad Request:**  
-  When required parameters (`owner`, `projectNumber`, or `repo` for repository-level projects) are missing.
+  When required parameters (`owner` or `projectNumber`) are missing.
   
   ```json
   { "error": "Missing owner or projectNumber." }
-  ```
-  
-  or
-  
-  ```json
-  { "error": "Missing repo for repository-level project." }
   ```
 
 - **500 Internal Server Error:**  
@@ -214,6 +155,6 @@ The API returns appropriate HTTP status codes and error messages in case of issu
 - The `api_key` header is validated against the value set in `SERVER_API_KEY`.
 - The project data is processed to map field values by name, making it easier to consume on the client side.
 - When using the `status` parameter, only items matching the specified status will be returned in the response.
-- For more information about GitHub's REST API, see the [official documentation](https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#http-method).
+- **This API currently supports only organization-level projects.** Future updates may include additional project types if needed.
 
 Happy coding!
