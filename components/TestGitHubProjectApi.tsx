@@ -75,6 +75,41 @@ export default function TestGitHubProjectApi() {
     }
   };
 
+  const handleFetchWithStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!apiKey) {
+        throw new Error('API key is missing');
+      }
+
+      const owner = 'SingularityNet-Ambassador-Program';
+      const repo = 'GitHub-PBL-WG';
+      const projectNumber = '14';
+      const status = 'Audited';
+
+      const headers = new Headers();
+      headers.set('api_key', apiKey);
+
+      const res = await fetch(
+        `/api/github/project-details?owner=${owner}&repo=${repo}&projectNumber=${projectNumber}&isOrg=false&status=${status}`,
+        { headers }
+      );
+
+      if (!res.ok) {
+        throw new Error('Network response was not OK');
+      }
+
+      const data = await res.json();
+      console.log('Project Data with Status Filter:', data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ margin: '2rem' }}>
       <h2>Test GitHub Project API</h2>
@@ -85,6 +120,9 @@ export default function TestGitHubProjectApi() {
         </button>
         <button onClick={handleFetchRepoProject} disabled={loading} style={{ marginLeft: '1rem' }}>
           Fetch Repo Project
+        </button>
+        <button onClick={handleFetchWithStatus} disabled={loading} style={{ marginLeft: '1rem' }}>
+          Fetch with Status Filter
         </button>
       </div>
 

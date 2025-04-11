@@ -46,6 +46,12 @@ api_key: YOUR_API_KEY
   - This is the standard setup when you create a project board directly in a repository.
   - The repository can be owned by either a user or an organization (specified in the `owner` parameter).
 
+- `status` (string):
+  - Filters the project items by their status field value.
+  - Only returns items that match the specified status.
+  - Example values: "In Progress", "Audited", "Completed", etc.
+  - The status value must exactly match the status field value in the project.
+
 ---
 
 ## Important Note About Project Setup
@@ -80,7 +86,15 @@ curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=
   -H "api_key: YOUR_API_KEY"
 ```
 
-### 3. Fetch Organization-Level Project (POST)
+### 3. Fetch Project with Status Filter (GET)
+
+```bash
+# Filter items by status
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&repo=REPOSITORY_NAME&projectNumber=1&status=Audited" \
+  -H "api_key: YOUR_API_KEY"
+```
+
+### 4. Fetch Organization-Level Project (POST)
 
 ```bash
 curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
@@ -93,7 +107,7 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
       }'
 ```
 
-### 4. Fetch Repository-Level Project (POST)
+### 5. Fetch Repository-Level Project (POST)
 
 ```bash
 # For a repository owned by a user
@@ -114,6 +128,20 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
         "owner": "ORG_NAME",
         "repo": "REPOSITORY_NAME",
         "projectNumber": 2
+      }'
+```
+
+### 6. Fetch Project with Status Filter (POST)
+
+```bash
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
+  -H "api_key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "owner": "ORG_NAME",
+        "repo": "REPOSITORY_NAME",
+        "projectNumber": 2,
+        "status": "Audited"
       }'
 ```
 
@@ -185,6 +213,7 @@ The API returns appropriate HTTP status codes and error messages in case of issu
 - The API uses a GitHub GraphQL client initialized with a token from the `GITHUB_TOKEN` environment variable.
 - The `api_key` header is validated against the value set in `SERVER_API_KEY`.
 - The project data is processed to map field values by name, making it easier to consume on the client side.
+- When using the `status` parameter, only items matching the specified status will be returned in the response.
 - For more information about GitHub's REST API, see the [official documentation](https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#http-method).
 
 Happy coding!
