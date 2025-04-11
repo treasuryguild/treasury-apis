@@ -161,7 +161,7 @@ async function fetchProjectData(
   let projectFields: any[] = [];
 
   while (hasNextPage) {
-    // Note: the same query is used with a different cursor for pagination.
+    // Use the same query with a different cursor for pagination.
     const data: any = await graphqlWithAuth(query, { ...variables, cursor });
     const projectData = isOrg
       ? data?.organization?.projectV2
@@ -185,11 +185,67 @@ async function fetchProjectData(
   return { title: projectTitle, fields: projectFields, items: allItems };
 }
 
-// 5. The unified API route handler
+/**
+ * 5. Filter tasks based on optional date and status parameters.
+ *
+ * For date filtering we assume the filtering applies to a field called "Due Date".
+ * For status, we look up the field "Status", and the check is done case-insensitively.
+ */
+function filterTasks(
+  items: any[],
+  statusFilter?: string,
+  startDateParam?: string,
+  endDateParam?: string
+) {
+  // Prepare status filter array if provided (support comma-separated list)
+  const statuses =
+    statusFilter && statusFilter.trim().length > 0
+      ? statusFilter.split(',').map(s => s.trim().toLowerCase())
+      : [];
+
+  // Parse date parameters if provided
+  const startDate = startDateParam ? new Date(startDateParam) : null;
+  const endDate = endDateParam ? new Date(endDateParam) : null;
+
+  return items.filter(item => {
+    let include = true;
+
+    // If a status filter is provided, check the "Status" field in fieldValues
+    if (statuses.length > 0) {
+      const statusValue =
+        (item.fieldValues?.['Status']?.name ||
+          item.fieldValues?.['Status']?.text ||
+          ''
+        ).toLowerCase();
+      include = include && statuses.includes(statusValue);
+    }
+
+    // If date filtering is requested, assume the date is taken from the "Due Date" field.
+    if (startDate || endDate) {
+      const dueDateStr = item.fieldValues?.['Due Date']?.date;
+      if (!dueDateStr) {
+        // If filtering by date and no "Due Date" is provided in the task, exclude it.
+        include = false;
+      } else {
+        const dueDate = new Date(dueDateStr);
+        if (startDate && dueDate < startDate) {
+          include = false;
+        }
+        if (endDate && dueDate > endDate) {
+          include = false;
+        }
+      }
+    }
+
+    return include;
+  });
+}
+
+// 6. The unified API route handler
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     validateApiKey(req);
-    let { owner, repo, projectNumber, isOrg } = req.query;
+    let { owner, repo, projectNumber, isOrg, status, startDate, endDate } = req.query;
 
     // Allow overriding via POST body
     if (req.method === 'POST') {
@@ -198,6 +254,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (body.repo) repo = body.repo;
       if (body.projectNumber) projectNumber = body.projectNumber;
       if (body.isOrg !== undefined) isOrg = body.isOrg;
+      if (body.status) status = body.status;
+      if (body.startDate) startDate = body.startDate;
+      if (body.endDate) endDate = body.endDate;
     }
 
     if (!owner || !projectNumber) {
@@ -211,8 +270,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ? { orgName: owner, projectNumber: projectNum }
       : { owner, repo, projectNumber: projectNum };
 
+    // Fetch the project data with pagination
     const rawProjectData = await fetchProjectData(graphqlWithAuth, useOrg, variables);
     const processed = processProjectData(rawProjectData);
+
+    // If filtering parameters were provided, filter the tasks accordingly.
+    if (processed.items && Array.isArray(processed.items)) {
+      processed.items = filterTasks(
+        processed.items,
+        typeof status === 'string' ? status : undefined,
+        typeof startDate === 'string' ? startDate : undefined,
+        typeof endDate === 'string' ? endDate : undefined
+      );
+    }
+
     return res.status(200).json({ data: processed });
   } catch (err: any) {
     if (err.message === 'Invalid API key') {

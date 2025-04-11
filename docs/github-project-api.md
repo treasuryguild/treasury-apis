@@ -46,6 +46,23 @@ api_key: YOUR_API_KEY
   - This is the standard setup when you create a project board directly in a repository.
   - The repository can be owned by either a user or an organization (specified in the `owner` parameter).
 
+- `status` (string):  
+  - Optional filter to filter items by their status.
+  - Case-insensitive matching.
+  - Can be a single status or comma-separated list of statuses.
+  - Example: `"In Progress"` or `"In Progress,Done"`
+
+- `startDate` (string):  
+  - Optional filter to filter items by their due date.
+  - Must be in ISO 8601 format (YYYY-MM-DD).
+  - Items with due dates before this date will be excluded.
+
+- `endDate` (string):  
+  - Optional filter to filter items by their due date.
+  - Must be in ISO 8601 format (YYYY-MM-DD).
+  - Items with due dates after this date will be excluded.
+  - Must be used in conjunction with `startDate`.
+
 ---
 
 ## Important Note About Project Setup
@@ -80,7 +97,33 @@ curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=
   -H "api_key: YOUR_API_KEY"
 ```
 
-### 3. Fetch Organization-Level Project (POST)
+### 3. Fetch with Status Filter (GET)
+
+```bash
+# Filter by single status
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true&status=In%20Progress" \
+  -H "api_key: YOUR_API_KEY"
+
+# Filter by multiple statuses
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true&status=In%20Progress,Done" \
+  -H "api_key: YOUR_API_KEY"
+```
+
+### 4. Fetch with Date Range Filter (GET)
+
+```bash
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true&startDate=2024-01-01&endDate=2024-12-31" \
+  -H "api_key: YOUR_API_KEY"
+```
+
+### 5. Fetch with All Filters (GET)
+
+```bash
+curl -X GET "https://treasury-apis.netlify.app/api/github/project-details?owner=ORG_NAME&projectNumber=1&isOrg=true&status=In%20Progress&startDate=2024-01-01&endDate=2024-12-31" \
+  -H "api_key: YOUR_API_KEY"
+```
+
+### 6. Fetch Organization-Level Project (POST)
 
 ```bash
 curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
@@ -93,7 +136,7 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
       }'
 ```
 
-### 4. Fetch Repository-Level Project (POST)
+### 7. Fetch Repository-Level Project (POST)
 
 ```bash
 # For a repository owned by a user
@@ -114,6 +157,22 @@ curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
         "owner": "ORG_NAME",
         "repo": "REPOSITORY_NAME",
         "projectNumber": 2
+      }'
+```
+
+### 8. Fetch with Filters (POST)
+
+```bash
+curl -X POST "https://treasury-apis.netlify.app/api/github/project-details" \
+  -H "api_key: YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "owner": "ORG_NAME",
+        "projectNumber": 1,
+        "isOrg": "true",
+        "status": "In Progress",
+        "startDate": "2024-01-01",
+        "endDate": "2024-12-31"
       }'
 ```
 
