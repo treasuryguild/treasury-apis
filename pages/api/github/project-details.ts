@@ -65,6 +65,7 @@ async function fetchProjectData(
             title
             body
             number
+            url
             createdAt
             updatedAt
             closedAt
