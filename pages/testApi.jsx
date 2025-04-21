@@ -1,4 +1,6 @@
 import { useState } from "react";
+import KoiosApiTester from '../components/KoiosApiTester';
+
 
 export default function TestApiPage() {
   const [data, setData] = useState(null);
@@ -173,6 +175,8 @@ export default function TestApiPage() {
           <pre className="text-sm bg-gray-200 p-2 rounded">{JSON.stringify(data, null, 2)}</pre>
         </div>
       )}
+
+<KoiosApiTester />
     </div>
   );
 }
