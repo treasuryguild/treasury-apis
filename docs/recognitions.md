@@ -56,7 +56,7 @@ curl -X GET "https://treasury-apis.netlify.app/api/recognitions?start_date=01.01
 
 ### 🔹 Insert a Single Record
 ```bash
-curl -X POST "http://localhost:3000/api/recognitions" \
+curl -X POST "https://treasury-apis.netlify.app/api/recognitions" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{
@@ -87,7 +87,7 @@ curl -X POST "http://localhost:3000/api/recognitions" \
 
 ### 🔹 Insert Multiple Records
 ```bash
-curl -X POST "http://localhost:3000/api/recognitions" \
+curl -X POST "https://treasury-apis.netlify.app/api/recognitions" \
   -H "api_key: YOUR_API_KEY_HERE" \
   -H "Content-Type: application/json" \
   -d '{

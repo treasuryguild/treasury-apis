@@ -51,6 +51,19 @@ export default async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       let { records } = req.body;
+
+      // Handle case where body is a string
+      if (typeof req.body === 'string') {
+        try {
+          records = JSON.parse(req.body).records;
+        } catch (parseError) {
+          return res.status(400).json({
+            success: false,
+            error: "Invalid JSON string in request body."
+          });
+        }
+      }
+
       if (!records) {
         return res.status(400).json({ success: false, error: "Missing records in request body." });
       }
@@ -79,18 +92,18 @@ export default async function handler(req, res) {
           record.insert_date = convertToDottedDate(record.insert_date);
         }
       }
-  
+
       const { data, error } = await supabase.from('external_task_data').upsert(records, {
         onConflict: ['recognition_id'],
       });
       if (error) throw error;
-  
+
       return res.status(201).json({ success: true, message: "Records inserted/updated successfully", data });
     } catch (error) {
       console.error('❌ Error inserting/updating data:', error);
       return res.status(500).json({ success: false, error: error.message });
     }
-  }  
+  }
 
   return res.status(405).json({ success: false, error: "Method Not Allowed" });
 }
