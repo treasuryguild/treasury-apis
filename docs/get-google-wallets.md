@@ -26,6 +26,7 @@ Returns an array of objects containing:
 - `Timestamp`: When the entry was recorded
 - `DiscordHandle`: User's Discord handle
 - `WalletAddress`: User's wallet address
+- `GitHubName`: User's GitHub username
 
 Example Response:
 ```json
@@ -33,7 +34,8 @@ Example Response:
   {
     "Timestamp": "2024-01-01T12:00:00Z",
     "DiscordHandle": "user#1234",
-    "WalletAddress": "addr1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    "WalletAddress": "addr1qxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "GitHubName": "githubusername"
   }
 ]
 ```
