@@ -336,7 +336,7 @@ const QueryTester: React.FC = () => {
             color: 'white'
           }}>
             <pre>
-              {JSON.stringify(walletsData.slice(0, 5), null, 2)}
+              {JSON.stringify(walletsData.slice(-5), null, 2)}
             </pre>
           </div>
         </div>
