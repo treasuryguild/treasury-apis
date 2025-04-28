@@ -138,16 +138,40 @@ curl -X POST "https://treasury-apis.netlify.app/api/recognitions" \
 
 ---
 
-## 3️⃣ Error Responses
+## 3️⃣ Error Logging and Responses
+
+### Error Logging
+The API implements comprehensive error logging with the following features:
+
+- Each request is assigned a unique `requestId` for tracking
+- All errors include:
+  - Error message
+  - Stack trace
+  - Request context (method, path, timestamp)
+  - Relevant data (query parameters, record counts, etc.)
+- Warnings are logged for:
+  - Invalid date formats (with automatic conversion)
+  - Invalid insert_date formats (with automatic conversion)
+
+### Error Responses
 If the request is invalid or unauthorized, the API will return an error message:
 
-| Status Code | Error Message |
-|-------------|--------------|
-| 400 | `"Missing records in request body."` |
-| 400 | `"Invalid date format. Expected DD.MM.YYYY"` |
-| 401 | `"Invalid or missing API key."` |
-| 405 | `"Method Not Allowed"` |
-| 500 | `"Internal Server Error"` |
+| Status Code | Error Message | Logged Context |
+|-------------|--------------|----------------|
+| 400 | `"Missing records in request body."` | Request method, path, timestamp |
+| 400 | `"Invalid JSON string in request body."` | Body type, length, request context |
+| 400 | `"Each record must include recognition_id (number), task_id (number), and date_completed (string)."` | Invalid record details, request context |
+| 401 | `"Invalid or missing API key."` | Request context, API key presence |
+| 405 | `"Method Not Allowed"` | Request method, path, timestamp |
+| 500 | `"Internal Server Error"` | Error stack trace, request context, relevant data |
+
+### Warning Logs
+The API will log warnings for the following scenarios:
+
+| Scenario | Logged Information |
+|----------|-------------------|
+| Invalid date format | Original date, record ID, request context |
+| Invalid insert_date format | Original date, record ID, request context |
 
 ---
 
@@ -155,6 +179,7 @@ If the request is invalid or unauthorized, the API will return an error message:
 - `recognition_id` and `task_id` **must be numbers**.
 - `date_completed` and `insert_date` must be in **DD.MM.YYYY** format.
 - If a record with the same `recognition_id` exists, it will be **updated** instead of duplicated.
+- Invalid date formats will be automatically converted to DD.MM.YYYY format with a warning log.
 
 ---
 Happy Coding! 🚀
