@@ -18,6 +18,7 @@ const QueryTester: React.FC = () => {
   const [contributorsData, setContributorsData] = useState<any>(null);
   const [walletsData, setWalletsData] = useState<any>(null);
   const [zoomMeetingsData, setZoomMeetingsData] = useState<any>(null);
+  const [getWalletsData, setGetWalletsData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +62,13 @@ const QueryTester: React.FC = () => {
           };
           url = `/api/zoom-meetings${actualQuery}`;
           break;
+        case 'getWallets':
+          headers = {
+            'Content-Type': 'application/json',
+            'api_key': API_KEY
+          };
+          url = '/api/getWallets';
+          break;
       }
 
       const response = await fetch(url, { headers });
@@ -78,24 +86,35 @@ const QueryTester: React.FC = () => {
           setContributorsData(null);
           setWalletsData(null);
           setZoomMeetingsData(null);
+          setGetWalletsData(null);
           break;
         case 'contributors':
           setResults(null);
           setContributorsData(data);
           setWalletsData(null);
           setZoomMeetingsData(null);
+          setGetWalletsData(null);
           break;
         case 'gwallets':
           setResults(null);
           setContributorsData(null);
           setWalletsData(data);
           setZoomMeetingsData(null);
+          setGetWalletsData(null);
           break;
         case 'zoom-meetings':
           setResults(null);
           setContributorsData(null);
           setWalletsData(null);
           setZoomMeetingsData(data);
+          setGetWalletsData(null);
+          break;
+        case 'getWallets':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setGetWalletsData(data);
           break;
       }
     } catch (err) {
@@ -145,6 +164,11 @@ const QueryTester: React.FC = () => {
       name: 'Get All Wallet Addresses',
       query: '',
       endpoint: 'gwallets'
+    },
+    {
+      name: 'Get Wallets (System Registered Users)',
+      query: '',
+      endpoint: 'getWallets'
     },
     {
       name: 'All Zoom Meetings (Last 10 Months)',
@@ -313,6 +337,32 @@ const QueryTester: React.FC = () => {
           }}>
             <pre>
               {JSON.stringify(walletsData.slice(0, 5), null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
+
+      {getWalletsData && (
+        <div style={{
+          border: '1px solid #ccc',
+          borderRadius: '4px',
+          padding: '20px',
+          backgroundColor: 'black',
+          color: 'white',
+          marginTop: '20px'
+        }}>
+          <h2 style={{ marginBottom: '10px' }}>Get Wallets Results</h2>
+          <h3>Total Wallets: {getWalletsData.data.length}</h3>
+          <div style={{
+            maxHeight: '400px',
+            overflow: 'auto',
+            backgroundColor: 'black',
+            padding: '10px',
+            borderRadius: '4px',
+            color: 'white'
+          }}>
+            <pre>
+              {JSON.stringify(getWalletsData.data.slice(0, 5), null, 2)}
             </pre>
           </div>
         </div>
