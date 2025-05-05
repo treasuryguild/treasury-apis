@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
   // Verify API key
   const providedKey = req.headers['api_key'];
-  if (!providedKey || providedKey !== process.env.NEXT_PUBLIC_SERVER_API_KEY) {
+  if (!providedKey || providedKey !== process.env.SERVER_API_KEY) {
     logError(new Error('Invalid or missing API key'), { ...requestContext, providedKey: providedKey ? 'present' : 'missing' });
     return res.status(401).json({ error: "Invalid or missing API key." });
   }
