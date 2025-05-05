@@ -8,6 +8,16 @@ GET /api/getGWallets
 ## Description
 This endpoint retrieves wallet addresses and associated Discord handles from a Google Sheet. The data is filtered to include only valid wallet addresses and Discord handles.
 
+## Data Submission
+Users can submit their wallet information via the [Wallet Collector Google Form](https://docs.google.com/forms/d/e/1FAIpQLSc1MQEeVa7BhgtnmkAjwLEvUgP9odLL_PkrjZ_ciHMtqY675g/viewform).
+
+This form collects:
+- Discord handle
+- GitHub name
+- Wallet address
+
+Once submitted, the data will be available through this API after processing.
+
 ## Authentication
 The API requires authentication using an API key header.
 
