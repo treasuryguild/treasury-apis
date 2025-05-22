@@ -116,11 +116,11 @@ function createFeeWallets(rawData) {
     if (fee.groupName && fee.tokenTicker && fee.fee && fee.walletAddress) {
       const groupName = fee.groupName.trim().toLowerCase();
       const tokenTicker = fee.tokenTicker.trim().toUpperCase();
-      
+
       if (!feeWallets.has(groupName)) {
         feeWallets.set(groupName, new Map());
       }
-      
+
       feeWallets.get(groupName).set(tokenTicker, {
         ...fee,
         groupName: groupName,
@@ -168,13 +168,13 @@ function updateOutputs(outputs, walletAddress, tokenInfo, quantity) {
     if (!(walletAddress in outputs)) {
       outputs[walletAddress] = [];
     }
-  
+
     const existingTokenIndex = outputs[walletAddress].findIndex(
       output => output.policyId === tokenInfo.policyId && output.assetName === tokenInfo.assetName
     );
-  
+
     if (existingTokenIndex !== -1) {
-      outputs[walletAddress][existingTokenIndex].quantity = 
+      outputs[walletAddress][existingTokenIndex].quantity =
         (BigInt(outputs[walletAddress][existingTokenIndex].quantity) + BigInt(quantity)).toString();
     } else {
       outputs[walletAddress].push({
@@ -224,7 +224,7 @@ function getContributionKey(task) {
 
 function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedData) {
   const contributionKey = getContributionKey(task);
-  
+
   if (!transformedData.metadata["674"].contributionMap) {
     transformedData.metadata["674"].contributionMap = new Map();
   }
@@ -263,13 +263,13 @@ function processTask(task, tokenRegistry, tokenTotals, feeWallets, transformedDa
     }
   }
 
- // Add 1 GMBL to each recipient's output only if they haven't received it yet
- const gmblTokenInfo = tokenRegistry['GMBL'];
- if (gmblTokenInfo && !walletsReceivedGMBL.has(task.walletAddress)) {
-   const gmblQuantity = calculateQuantity('1', gmblTokenInfo.multiplier);
-   updateOutputs(transformedData.outputs, task.walletAddress, gmblTokenInfo, gmblQuantity);
-   walletsReceivedGMBL.add(task.walletAddress);
- }
+  // Add 1 GMBL to each recipient's output only if they haven't received it yet
+  const gmblTokenInfo = tokenRegistry['GMBL'];
+  if (gmblTokenInfo && !walletsReceivedGMBL.has(task.walletAddress)) {
+    const gmblQuantity = calculateQuantity('1', gmblTokenInfo.multiplier);
+    updateOutputs(transformedData.outputs, task.walletAddress, gmblTokenInfo, gmblQuantity);
+    walletsReceivedGMBL.add(task.walletAddress);
+  }
 }
 
 // After processing all tasks, convert the Map back to an array
@@ -433,7 +433,7 @@ async function fetchProjectWallets() {
 
 function determineProjectWallet(taskCreator) {
   const lowerTaskCreator = taskCreator.toLowerCase();
-  
+
   // CASE statement to match taskCreator with project_name
   const projectName = (() => {
     switch (lowerTaskCreator) {
@@ -494,20 +494,33 @@ export async function processAndInsertData(rawData) {
     await fetchValidTokens();
     await fetchProjectWallets();
 
-    const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(rawData);
+    // Parse rawData if it's a string
+    let parsedRawData = rawData;
+    if (typeof rawData === 'string') {
+      try {
+        // First unescape any escaped quotes
+        const unescapedData = rawData.replace(/\\"/g, '"');
+        parsedRawData = JSON.parse(unescapedData);
+      } catch (parseError) {
+        console.error('Error parsing raw data:', parseError);
+        throw new Error('Invalid JSON data format');
+      }
+    }
+
+    const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(parsedRawData);
     if (duplicateRecognitionIds.length > 0) {
       throw new Error(`Duplicate recognitionIds detected: ${duplicateRecognitionIds.join(', ')}`);
     }
 
-    const transformedData = await transformData(rawData);
+    const transformedData = await transformData(parsedRawData);
     const processedData = await processData(transformedData);
-    const taskCreator = Object.values(rawData.tasks)[0].groupName; 
+    const taskCreator = Object.values(parsedRawData.tasks)[0].groupName;
     const projectWallet = determineProjectWallet(taskCreator);
 
     const { data: insertedData, error } = await supabase
       .from('tx_json_generator_data')
       .insert({
-        raw_data: rawData,
+        raw_data: parsedRawData,  // Use the parsed data
         processed_data: processedData,
         reward_status: false,
         recognition_ids: newRecognitionIds,
@@ -519,7 +532,7 @@ export async function processAndInsertData(rawData) {
 
     return {
       insertedData: insertedData[0],
-      rawData,
+      rawData: parsedRawData,  // Return the parsed data
       processedData
     };
   } catch (error) {
