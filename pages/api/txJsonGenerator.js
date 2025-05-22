@@ -17,8 +17,8 @@ async function validateData(data) {
 
   // Check if required fields are present
   if (!data.tokenRegistry || !data.tokenFee || !data.tasks) {
-    errors.push({ 
-      code: 'MISSING_REQUIRED_FIELDS', 
+    errors.push({
+      code: 'MISSING_REQUIRED_FIELDS',
       message: 'Missing required fields: tokenRegistry, tokenFee, or tasks',
       recognitionIds: []
     });
@@ -29,15 +29,15 @@ async function validateData(data) {
     const policyId = tokenInfo.policyId.toLowerCase();
     if (tokenInfo.tokenTicker.toUpperCase() === 'ADA') {
       if (policyId !== '' && policyId !== 'ada' && policyId !== 'lovelace') {
-        errors.push({ 
-          code: 'INVALID_ADA_POLICY_ID', 
+        errors.push({
+          code: 'INVALID_ADA_POLICY_ID',
           message: `Invalid ADA policy ID: ${policyId}. Should be empty or 'ada'.`,
           recognitionIds: []
         });
       }
     } else if (!isValidToken(policyId, validTokens)) {
-      errors.push({ 
-        code: 'INVALID_TOKEN', 
+      errors.push({
+        code: 'INVALID_TOKEN',
         message: `Invalid token ${tokenInfo.tokenTicker} (Policy ID: ${policyId}) in tokenRegistry`,
         recognitionIds: []
       });
@@ -56,16 +56,16 @@ async function validateData(data) {
     const taskSet = new Map();
     for (const task of Object.values(data.tasks)) {
       if (!task.recognitionId) {
-        errors.push({ 
-          code: 'MISSING_RECOGNITION_ID', 
+        errors.push({
+          code: 'MISSING_RECOGNITION_ID',
           message: `Task is missing recognitionId`,
           recognitionIds: []
         });
       }
 
       if (!isValidWalletAddress(task.walletAddress)) {
-        errors.push({ 
-          code: 'INVALID_WALLET_ADDRESS', 
+        errors.push({
+          code: 'INVALID_WALLET_ADDRESS',
           message: `Invalid wallet address for task ${task.recognitionId}`,
           recognitionIds: [task.recognitionId]
         });
@@ -75,8 +75,8 @@ async function validateData(data) {
       const taskKey = `${task.taskName}|${task.date}|${task.proofLink}|${task.walletOwner}`;
       if (taskSet.has(taskKey)) {
         const duplicateTask = taskSet.get(taskKey);
-        errors.push({ 
-          code: 'DUPLICATE_RECOGNITION', 
+        errors.push({
+          code: 'DUPLICATE_RECOGNITION',
           message: `Recognitions have the same name, date, walletOwner and prooflink`,
           recognitionIds: [duplicateTask.recognitionId, task.recognitionId]
         });
@@ -91,10 +91,10 @@ async function validateData(data) {
             const upperToken = token.toUpperCase();
             const tokenInfo = data.tokenRegistry[Object.keys(data.tokenRegistry).find(key => data.tokenRegistry[key].tokenTicker.toUpperCase() === upperToken)];
             console.log('Token:', token, 'Amount:', amount, 'Token Info:', tokenInfo);
-            
+
             if (!tokenInfo) {
-              errors.push({ 
-                code: 'MISSING_TOKEN_INFO', 
+              errors.push({
+                code: 'MISSING_TOKEN_INFO',
                 message: `Missing token info for ${token} in task ${task.recognitionId}`,
                 recognitionIds: [task.recognitionId]
               });
@@ -102,8 +102,8 @@ async function validateData(data) {
               const policyId = tokenInfo.policyId.toLowerCase();
               console.log(`Checking policy ID: ${policyId} for token ${upperToken}`);
               if (!isValidToken(policyId, validTokens)) {
-                errors.push({ 
-                  code: 'INVALID_TOKEN', 
+                errors.push({
+                  code: 'INVALID_TOKEN',
                   message: `Invalid token ${upperToken} (Policy ID: ${policyId}) for task ${task.recognitionId}`,
                   recognitionIds: [task.recognitionId]
                 });
@@ -140,9 +140,9 @@ export default async function handler(req, res) {
   // Check for API key
   const apiKey = req.headers['api_key'];
   if (!apiKey || apiKey !== API_KEY) {
-    return res.status(401).json({ 
-      errors: [{ 
-        code: 'UNAUTHORIZED', 
+    return res.status(401).json({
+      errors: [{
+        code: 'UNAUTHORIZED',
         message: 'Invalid or missing API key',
         recognitionIds: []
       }],
@@ -152,9 +152,9 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
-    return res.status(405).json({ 
-      errors: [{ 
-        code: 'METHOD_NOT_ALLOWED', 
+    return res.status(405).json({
+      errors: [{
+        code: 'METHOD_NOT_ALLOWED',
         message: `Method ${req.method} Not Allowed`,
         recognitionIds: []
       }],
@@ -169,14 +169,16 @@ export default async function handler(req, res) {
     // Parse string to JSON if necessary
     if (typeof receivedData === 'string') {
       try {
-        receivedData = JSON.parse(receivedData);
+        // First unescape any escaped quotes
+        const unescapedData = receivedData.replace(/\\"/g, '"');
+        receivedData = JSON.parse(unescapedData);
       } catch (parseError) {
         await insertRawDataWithErrors(req.body, [{
           code: 'INVALID_JSON',
           message: 'Invalid JSON string',
           recognitionIds: []
         }]);
-        return res.status(400).json({ 
+        return res.status(400).json({
           errors: [{
             code: 'INVALID_JSON',
             message: 'Invalid JSON string',
@@ -194,7 +196,7 @@ export default async function handler(req, res) {
         message: 'Invalid data format. Expected an object or a valid JSON string.',
         recognitionIds: []
       }]);
-      return res.status(400).json({ 
+      return res.status(400).json({
         errors: [{
           code: 'INVALID_DATA_FORMAT',
           message: 'Invalid data format. Expected an object or a valid JSON string.',
@@ -207,13 +209,13 @@ export default async function handler(req, res) {
     // Check for duplicate recognitionIds
     const { duplicateRecognitionIds, newRecognitionIds } = await checkForDuplicateRecognitionIds(receivedData);
     if (duplicateRecognitionIds.length > 0) {
-      const errors = [{ 
-        code: 'DUPLICATE_RECOGNITION_ID', 
+      const errors = [{
+        code: 'DUPLICATE_RECOGNITION_ID',
         message: `Recognition IDs were already used in previous transactions`,
-        recognitionIds: duplicateRecognitionIds 
+        recognitionIds: duplicateRecognitionIds
       }];
       await insertRawDataWithErrors(receivedData, errors);
-      return res.status(409).json({ 
+      return res.status(409).json({
         errors: errors,
         message: 'Conflict: Duplicate recognitionIds detected'
       });
@@ -223,7 +225,7 @@ export default async function handler(req, res) {
     const validationErrors = await validateData(receivedData);
     if (validationErrors.length > 0) {
       await insertRawDataWithErrors(receivedData, validationErrors);
-      return res.status(422).json({ 
+      return res.status(422).json({
         errors: validationErrors,
         message: 'Unprocessable Entity: Data validation failed'
       });
@@ -241,14 +243,14 @@ export default async function handler(req, res) {
       // Process and insert data using the utility function
       const { insertedData, rawData, processedData } = await processAndInsertData(receivedData);
       console.log('Processed data:', processedData);
-      res.status(200).json({ 
+      res.status(200).json({
         message: 'Data validated, transformed, stored, and processed successfully'
       });
     }
 
   } catch (error) {
     console.error('Error processing request:', error);
-    
+
     // Attempt to insert raw data with error information
     try {
       await insertRawDataWithErrors(req.body, [{ code: 'INTERNAL_SERVER_ERROR', message: error.message }]);
