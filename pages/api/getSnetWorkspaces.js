@@ -2,16 +2,16 @@
 import axios from 'axios';
 
 export default async function handler(req, res) {
-    const SERVER_API_KEY = process.env.SERVER_API_KEY;
-    const apiKeyHeader = req.headers['api_key'];
-  
-    if (!apiKeyHeader || apiKeyHeader !== SERVER_API_KEY) {
-      return res.status(403).json({ error: 'Forbidden' });
-    }
+  const SERVER_API_KEY = process.env.SERVER_API_KEY;
+  const apiKeyHeader = req.headers['api_key'];
 
-    async function getDework(id, orgSlug, workspaceSlug) {
+  if (!apiKeyHeader || apiKeyHeader !== SERVER_API_KEY) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  async function getDework(id, orgSlug, workspaceSlug) {
     const workspace = id;  // d88291a1-7741-4177-aac4-87813f72cade
-    
+
     // Your existing GraphQL query
     const query = `
       query GetWorkspaceTasksQuery {
@@ -55,37 +55,37 @@ export default async function handler(req, res) {
         }
       }
     `;
-  
+
     // Your existing headers
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': process.env.DEWORK_AUTH,
     };
-  
+
     try {
       const response = await axios.post('https://api.deworkxyz.com/graphql?op=GetWorkspaceTasksQuery', {
         query,
       }, {
         headers,
       });
-  
-     // Add task_url to each task
-     if (response.data.data.getWorkspace && Array.isArray(response.data.data.getWorkspace.tasks)) {
+
+      // Add task_url to each task
+      if (response.data.data.getWorkspace && Array.isArray(response.data.data.getWorkspace.tasks)) {
         response.data.data.getWorkspace.tasks.forEach(task => {
           task.task_url = `https://app.dework.xyz/${orgSlug}/${workspaceSlug}?taskId=${task.id}`;
         });
       }
-  
-      return response.data;  
+
+      return response.data;
     } catch (error) {
       console.error('Error fetching data:', error);
       return null;
     }
   }
-  
+
   function transformWorkspaces(workspaces, organizationName, orgSlug) {
     let result = {};
-  
+
     workspaces.forEach(workspace => {
       const key = workspace.name.replace(/[^\w\s]/gi, '').replace(/\s+/g, '');
       result[key] = {
@@ -96,13 +96,13 @@ export default async function handler(req, res) {
         tasks: []
       };
     });
-  
+
     return result;
   }
 
   async function fetchOrganizationDetails() {
     const organizationId = '5c29434c-e830-442b-b9f5-d2fb00ee7b34'; // You can fetch from req.body if it's a POST
-    
+
     const query = `
       query GetOrganizationDetailsQuery {
         getOrganization(id: "${organizationId}") {
@@ -116,19 +116,19 @@ export default async function handler(req, res) {
         }
       }
     `;
-    
+
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': process.env.DEWORK_AUTH,
     };
-  
+
     try {
       const response = await axios.post('https://api.deworkxyz.com/graphql?op=GetOrganizationDetailsQuery', {
         query,
       }, {
         headers,
       });
-      
+
       const organization = response.data.data.getOrganization;
       return transformWorkspaces(organization.workspaces, organization.name, organization.slug);  // Return transformed workspaces
     } catch (error) {
@@ -138,19 +138,19 @@ export default async function handler(req, res) {
   }
 
   let snet = await fetchOrganizationDetails();
-  
+
   const fetchAllTasks = Object.keys(snet).map(async (key) => {
     const workspace = snet[key];
     if (!workspace) return;
 
     const tasksResponse = await getDework(workspace.id, workspace.org_slug, workspace.workspace_slug);
-    
+
     if (tasksResponse && tasksResponse.data && tasksResponse.data.getWorkspace) {
       workspace.tasks = tasksResponse.data.getWorkspace.tasks.filter(task => {
         if (!task.tags || task.tags.length === 0) {
           return false;
         }
-  
+
         return task.tags.some(tag => {
           const labelLower = tag.label.toLowerCase();
           return labelLower.includes('audited') || labelLower.includes('fund request');
@@ -158,13 +158,13 @@ export default async function handler(req, res) {
       });
     }
   });
-  
+
   // Wait for all tasks to be fetched
   await Promise.all(fetchAllTasks);
-  
+
   const filteredSnet = Object.fromEntries(
     Object.entries(snet).filter(([key, workspace]) => workspace.tasks && workspace.tasks.length > 0)
   );
-  
+
   res.status(200).json(filteredSnet);
 }

@@ -312,7 +312,9 @@ function processFees(feeWallets, tokenRegistry, transformedData, tokenTotals, ta
           console.log(`Match found for group ${taskGroupName} and token ${taskTokenTicker}`);
 
           // Calculate the fee based on taskAmount for this token
-          const feePercentage = parseFloat(feeInfo.fee.replace(',', '.')) / 100;
+          const feePercentage = (typeof feeInfo.fee === 'string' ?
+            parseFloat(feeInfo.fee.replace(',', '.')) :
+            Number(feeInfo.fee)) / 100;
           const exactFeeAmount = parsedAmount * feePercentage;
 
           // Accumulate the fee
