@@ -44,10 +44,20 @@ async function validateData(data) {
     }
   }
 
-  // Convert commas to points in exchange rates
+  // Convert exchange rates to numbers
   if (data.exchangeRates) {
     Object.keys(data.exchangeRates).forEach(key => {
-      data.exchangeRates[key] = data.exchangeRates[key].replace(',', '.');
+      const rate = data.exchangeRates[key];
+      if (typeof rate === 'string') {
+        // Handle string values by replacing comma with point and converting to number
+        data.exchangeRates[key] = parseFloat(rate.replace(',', '.'));
+      } else if (typeof rate === 'number') {
+        // Numbers are already in the right format
+        data.exchangeRates[key] = rate;
+      } else {
+        // Handle any other type by converting to number
+        data.exchangeRates[key] = Number(rate);
+      }
     });
   }
 
