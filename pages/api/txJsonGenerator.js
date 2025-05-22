@@ -8,6 +8,23 @@ const TESTING_MODE = false; // Set this to false to disable testing mode
 // Helper function for wallet address validation
 const isValidWalletAddress = (address) => address.startsWith('addr1') && address.length === 103;
 
+// Helper function to convert string numbers to actual numbers
+function convertToNumber(value) {
+  if (typeof value === 'string') {
+    // Handle string values by replacing comma with point and converting to number
+    return parseFloat(value.replace(',', '.'));
+  } else if (typeof value === 'number') {
+    // Numbers are already in the right format
+    return value;
+  } else if (value === '') {
+    // Empty strings should be converted to 0
+    return 0;
+  } else {
+    // Handle any other type by converting to number
+    return Number(value);
+  }
+}
+
 async function validateData(data) {
   const errors = [];
   const validTokens = await getValidTokens();
@@ -47,16 +64,35 @@ async function validateData(data) {
   // Convert exchange rates to numbers
   if (data.exchangeRates) {
     Object.keys(data.exchangeRates).forEach(key => {
-      const rate = data.exchangeRates[key];
-      if (typeof rate === 'string') {
-        // Handle string values by replacing comma with point and converting to number
-        data.exchangeRates[key] = parseFloat(rate.replace(',', '.'));
-      } else if (typeof rate === 'number') {
-        // Numbers are already in the right format
-        data.exchangeRates[key] = rate;
-      } else {
-        // Handle any other type by converting to number
-        data.exchangeRates[key] = Number(rate);
+      data.exchangeRates[key] = convertToNumber(data.exchangeRates[key]);
+    });
+  }
+
+  // Convert fee values to numbers
+  if (data.tokenFee) {
+    Object.values(data.tokenFee).forEach(fee => {
+      if (fee) {
+        fee.fee = convertToNumber(fee.fee);
+      }
+    });
+  }
+
+  // Convert token registry numeric values
+  if (data.tokenRegistry) {
+    Object.values(data.tokenRegistry).forEach(token => {
+      if (token) {
+        token.multiplier = convertToNumber(token.multiplier);
+      }
+    });
+  }
+
+  // Convert task token values
+  if (data.tasks) {
+    Object.values(data.tasks).forEach(task => {
+      if (task && task.tokenT) {
+        Object.keys(task.tokenT).forEach(token => {
+          task.tokenT[token] = convertToNumber(task.tokenT[token]);
+        });
       }
     });
   }
