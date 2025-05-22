@@ -6,13 +6,13 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 export const fetchAllMeetings = async (accessToken, userId = 'me') => {
   const meetings = [];
   let nextPageToken = '';
-  
+
   do {
     try {
       if (nextPageToken) {
         await delay(100);
       }
-      
+
       const response = await axios.get(`https://api.zoom.us/v2/users/${userId}/meetings`, {
         params: {
           type: 'past',
@@ -23,10 +23,10 @@ export const fetchAllMeetings = async (accessToken, userId = 'me') => {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-      
+
       meetings.push(...response.data.meetings);
       nextPageToken = response.data.next_page_token;
-      
+
     } catch (error) {
       if (error.response?.status === 429) {
         console.log('Rate limit hit, waiting before retry...');
@@ -51,7 +51,7 @@ export const fetchParticipantsWithRateLimit = async (meetings, accessToken) => {
     const batchResults = await Promise.all(
       batch.map(meeting => fetchMeetingParticipants(meeting.id, accessToken))
     );
-    
+
     for (let j = 0; j < batch.length; j++) {
       results.push({
         participants: batchResults[j],
@@ -71,7 +71,7 @@ export const fetchParticipantsWithRateLimit = async (meetings, accessToken) => {
 const fetchMeetingParticipants = async (meetingId, accessToken) => {
   try {
     const response = await axios.get(
-      `https://api.zoom.us/v2/past_meetings/${meetingId}/participants`,
+      `https://api.zoom.us/v2/report/meetings/${meetingId}/participants`,
       {
         params: {
           page_size: 500
@@ -81,9 +81,9 @@ const fetchMeetingParticipants = async (meetingId, accessToken) => {
         },
       }
     );
-    
+    console.log(response.data.participants);
     return response.data.participants.reduce((acc, current) => {
-      const x = acc.find(item => item.user_email === current.user_email);
+      const x = acc.find(item => item.name === current.name);
       if (!x) {
         return acc.concat([current]);
       } else {
