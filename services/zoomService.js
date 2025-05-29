@@ -82,18 +82,7 @@ const fetchMeetingParticipants = async (meetingId, accessToken) => {
       }
     );
     console.log(response.data.participants);
-    return response.data.participants.reduce((acc, current) => {
-      const x = acc.find(item => item.name === current.name);
-      if (!x) {
-        return acc.concat([current]);
-      } else {
-        if (current.duration > x.duration) {
-          const index = acc.indexOf(x);
-          acc[index] = current;
-        }
-        return acc;
-      }
-    }, []);
+    return response.data.participants;
 
   } catch (error) {
     if (error.response?.status === 429) {
