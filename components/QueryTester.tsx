@@ -189,12 +189,20 @@ const QueryTester: React.FC = () => {
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
       endpoint: 'zoom-meetings'
-    },
-    {
+    }, {
       name: 'Zoom: Last Week',
       query: () => {
         const endDate = new Date();
         const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
+      },
+      endpoint: 'zoom-meetings'
+    },
+    {
+      name: 'Zoom: May 22-24, 2025',
+      query: () => {
+        const startDate = new Date(2025, 4, 22); // Month is 0-indexed, so 4 = May
+        const endDate = new Date(2025, 4, 24);
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
       endpoint: 'zoom-meetings'
