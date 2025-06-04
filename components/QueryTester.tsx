@@ -18,11 +18,16 @@ const QueryTester: React.FC = () => {
   const [contributorsData, setContributorsData] = useState<any>(null);
   const [walletsData, setWalletsData] = useState<any>(null);
   const [zoomMeetingsData, setZoomMeetingsData] = useState<any>(null);
+  const [zoomListData, setZoomListData] = useState<any>(null);
   const [getWalletsData, setGetWalletsData] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [zoomParticipantsData, setZoomParticipantsData] = useState<any>(null);
 
-  const fetchData = async (queryParams: string | (() => string), endpoint: string = 'recognitions'): Promise<void> => {
+  const fetchData = async (
+    queryParams: string | (() => string),
+    endpoint: string = 'recognitions'
+  ): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -42,78 +47,137 @@ const QueryTester: React.FC = () => {
         case 'recognitions':
           headers = {
             'Content-Type': 'application/json',
-            'api_key': API_KEY,
-            'project-id': PROJECT_ID
+            api_key: API_KEY,
+            'project-id': PROJECT_ID,
           };
           url = `/api/recognitions${actualQuery}`;
           break;
+
         case 'contributors':
         case 'gwallets':
           headers = {
             'Content-Type': 'application/json',
-            'api_key': API_KEY
+            api_key: API_KEY,
           };
           url = endpoint === 'contributors' ? '/api/contributors' : '/api/getGWallets';
           break;
+
         case 'zoom-meetings':
           headers = {
             'Content-Type': 'application/json',
-            'api_key': API_KEY
+            api_key: API_KEY,
           };
+          // KEEP existing behavior pointing to /api/zoom-meetings
           url = `/api/zoom-meetings${actualQuery}`;
           break;
+
+        case 'zoom-list':
+          headers = {
+            'Content-Type': 'application/json',
+            api_key: API_KEY,
+          };
+          // NEW: listMeeting summaries endpoint
+          url = `/api/zoom/listMeetings${actualQuery}`;
+          break;
+
+        // NEW: “zoom-participants” hits our new /api/zoom/getMeetingParticipants
+        case 'zoom-participants':
+          headers = {
+            'Content-Type': 'application/json',
+            api_key: API_KEY,
+          };
+          url = `/api/zoom/getMeetingParticipants${actualQuery}`;
+          break;
+
         case 'getWallets':
           headers = {
             'Content-Type': 'application/json',
-            'api_key': API_KEY
+            api_key: API_KEY,
           };
           url = '/api/getWallets';
           break;
+
+        default:
+          throw new Error(`Unknown endpoint: ${endpoint}`);
       }
 
       const response = await fetch(url, { headers });
-
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
 
-      // Set data based on endpoint
+      // Populate state depending on which endpoint called:
       switch (endpoint) {
         case 'recognitions':
           setResults(data);
           setContributorsData(null);
           setWalletsData(null);
           setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null); // clear previous participants
           setGetWalletsData(null);
           break;
+
         case 'contributors':
           setResults(null);
           setContributorsData(data);
           setWalletsData(null);
           setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
           setGetWalletsData(null);
           break;
+
         case 'gwallets':
           setResults(null);
           setContributorsData(null);
           setWalletsData(data);
           setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
           setGetWalletsData(null);
           break;
+
         case 'zoom-meetings':
           setResults(null);
           setContributorsData(null);
           setWalletsData(null);
           setZoomMeetingsData(data);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
           setGetWalletsData(null);
           break;
+
+        case 'zoom-list':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(data);
+          setZoomParticipantsData(null);
+          setGetWalletsData(null);
+          break;
+
+        // NEW: store the participants result
+        case 'zoom-participants':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(data); // data = { participants: [...] }
+          setGetWalletsData(null);
+          break;
+
         case 'getWallets':
           setResults(null);
           setContributorsData(null);
           setWalletsData(null);
           setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
           setGetWalletsData(data);
           break;
       }
@@ -128,47 +192,47 @@ const QueryTester: React.FC = () => {
     {
       name: 'All Recognitions',
       query: '',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Filter by Contributor',
       query: '?contributor_id=jnaxjp',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Filter by Date Range',
       query: '?startDate=01.01.23&endDate=31.12.23',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Filter by Subgroup',
       query: '?subgroup=treasury guild',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Filter by Task Name',
       query: '?task_name=Treasury JSON Generator API',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Combined Filters',
       query: '?contributor_id=jnaxjp&startDate=01.01.23&endDate=31.12.23&subgroup=treasury guild',
-      endpoint: 'recognitions'
+      endpoint: 'recognitions',
     },
     {
       name: 'Get All Contributors',
       query: '',
-      endpoint: 'contributors'
+      endpoint: 'contributors',
     },
     {
       name: 'Get All Wallet Addresses',
       query: '',
-      endpoint: 'gwallets'
+      endpoint: 'gwallets',
     },
     {
       name: 'Get Wallets (System Registered Users)',
       query: '',
-      endpoint: 'getWallets'
+      endpoint: 'getWallets',
     },
     {
       name: 'All Zoom Meetings (Last 10 Months)',
@@ -178,7 +242,7 @@ const QueryTester: React.FC = () => {
         startDate.setMonth(startDate.getMonth() - 10);
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
-      endpoint: 'zoom-meetings'
+      endpoint: 'zoom-meetings', // still calls /api/zoom-meetings
     },
     {
       name: 'Zoom: Last 3 Months',
@@ -188,37 +252,60 @@ const QueryTester: React.FC = () => {
         startDate.setMonth(startDate.getMonth() - 3);
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
-      endpoint: 'zoom-meetings'
-    }, {
+      endpoint: 'zoom-meetings',
+    },
+    {
       name: 'Zoom: Last Week',
       query: () => {
         const endDate = new Date();
         const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
-      endpoint: 'zoom-meetings'
+      endpoint: 'zoom-meetings',
     },
     {
       name: 'Zoom: May 22-24, 2025',
       query: () => {
-        const startDate = new Date(2025, 4, 22); // Month is 0-indexed, so 4 = May
+        const startDate = new Date(2025, 4, 22); // Month is 0-indexed (4 = May)
         const endDate = new Date(2025, 4, 24);
         return `?startDate=${formatDate(startDate)}&endDate=${formatDate(endDate)}`;
       },
-      endpoint: 'zoom-meetings'
-    }
+      endpoint: 'zoom-meetings',
+    },
+    {
+      name: 'Zoom raw: Last 3 Months',
+      query: () => {
+        const today = new Date();
+        const past = new Date();
+        past.setMonth(past.getMonth() - 3);
+        return `?startDate=${formatDate(past)}&endDate=${formatDate(today)}`;
+      },
+      endpoint: 'zoom-list',
+    },
+    {
+      name: 'Marketing Guild Participants',
+      query: () => {
+        // Your specific uuid: "0BIOEK5/R1+74e+onfcxXw=="
+        // URL‐encode it once (the API route itself will double‐encode if needed):
+        const rawUuid = '0BIOEK5/R1+74e+onfcxXw==';
+        return `?uuid=${encodeURIComponent(rawUuid)}`;
+      },
+      endpoint: 'zoom-participants',
+    },
   ];
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '20px', color: 'white' }}>API Query Tester</h1>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '10px',
-        marginBottom: '20px'
-      }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '10px',
+          marginBottom: '20px',
+        }}
+      >
         {queries.map((q, index) => (
           <button
             key={index}
@@ -231,7 +318,7 @@ const QueryTester: React.FC = () => {
               backgroundColor: 'black',
               color: 'white',
               cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
+              opacity: loading ? 0.7 : 1,
             }}
           >
             {q.name}
@@ -246,158 +333,232 @@ const QueryTester: React.FC = () => {
       )}
 
       {error && (
-        <div style={{
-          color: 'red',
-          padding: '10px',
-          border: '1px solid red',
-          borderRadius: '4px',
-          marginBottom: '20px'
-        }}>
+        <div
+          style={{
+            color: 'red',
+            padding: '10px',
+            border: '1px solid red',
+            borderRadius: '4px',
+            marginBottom: '20px',
+          }}
+        >
           Error: {error}
         </div>
       )}
 
       {results && (
-        <div style={{
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '20px',
-          backgroundColor: 'black',
-          color: 'white'
-        }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+          }}
+        >
           <h2 style={{ marginBottom: '10px' }}>Recognition Results</h2>
 
           <div style={{ marginBottom: '20px' }}>
             <h3>Metadata:</h3>
-            <pre style={{
-              backgroundColor: 'black',
-              padding: '10px',
-              borderRadius: '4px',
-              overflow: 'auto',
-              color: 'white'
-            }}>
+            <pre
+              style={{
+                backgroundColor: 'black',
+                padding: '10px',
+                borderRadius: '4px',
+                overflow: 'auto',
+                color: 'white',
+              }}
+            >
               {JSON.stringify(results.metadata, null, 2)}
             </pre>
           </div>
 
           <div>
             <h3>Total Recognitions: {results.recognitions.length}</h3>
-            <div style={{
-              maxHeight: '400px',
-              overflow: 'auto',
-              backgroundColor: 'black',
-              padding: '10px',
-              borderRadius: '4px',
-              color: 'white'
-            }}>
-              <pre>
-                {JSON.stringify(results.recognitions.slice(0, 50), null, 2)}
-              </pre>
+            <div
+              style={{
+                maxHeight: '400px',
+                overflow: 'auto',
+                backgroundColor: 'black',
+                padding: '10px',
+                borderRadius: '4px',
+                color: 'white',
+              }}
+            >
+              <pre>{JSON.stringify(results.recognitions.slice(0, 50), null, 2)}</pre>
             </div>
           </div>
         </div>
       )}
 
       {contributorsData && (
-        <div style={{
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '20px',
-          backgroundColor: 'black',
-          color: 'white',
-          marginTop: '20px'
-        }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
           <h2 style={{ marginBottom: '10px' }}>Contributors Results</h2>
           <h3>Total Contributors: {contributorsData.length}</h3>
-          <div style={{
-            maxHeight: '400px',
-            overflow: 'auto',
-            backgroundColor: 'black',
-            padding: '10px',
-            borderRadius: '4px',
-            color: 'white'
-          }}>
-            <pre>
-              {JSON.stringify(contributorsData.slice(0, 5), null, 2)}
-            </pre>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(contributorsData.slice(0, 5), null, 2)}</pre>
           </div>
         </div>
       )}
 
       {walletsData && (
-        <div style={{
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '20px',
-          backgroundColor: 'black',
-          color: 'white',
-          marginTop: '20px'
-        }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
           <h2 style={{ marginBottom: '10px' }}>Wallet Addresses Results</h2>
           <h3>Total Wallets: {walletsData.length}</h3>
-          <div style={{
-            maxHeight: '400px',
-            overflow: 'auto',
-            backgroundColor: 'black',
-            padding: '10px',
-            borderRadius: '4px',
-            color: 'white'
-          }}>
-            <pre>
-              {JSON.stringify(walletsData.slice(-5), null, 2)}
-            </pre>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(walletsData.slice(-5), null, 2)}</pre>
           </div>
         </div>
       )}
 
       {getWalletsData && (
-        <div style={{
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '20px',
-          backgroundColor: 'black',
-          color: 'white',
-          marginTop: '20px'
-        }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
           <h2 style={{ marginBottom: '10px' }}>Get Wallets Results</h2>
           <h3>Total Wallets: {getWalletsData.data.length}</h3>
-          <div style={{
-            maxHeight: '400px',
-            overflow: 'auto',
-            backgroundColor: 'black',
-            padding: '10px',
-            borderRadius: '4px',
-            color: 'white'
-          }}>
-            <pre>
-              {JSON.stringify(getWalletsData.data.slice(0, 5), null, 2)}
-            </pre>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(getWalletsData.data.slice(0, 5), null, 2)}</pre>
           </div>
         </div>
       )}
 
       {zoomMeetingsData && (
-        <div style={{
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          padding: '20px',
-          backgroundColor: 'black',
-          color: 'white',
-          marginTop: '20px'
-        }}>
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
           <h2 style={{ marginBottom: '10px' }}>Zoom Meetings Results</h2>
           <h3>Total Meetings: {zoomMeetingsData.meetings.length}</h3>
-          <div style={{
-            maxHeight: '400px',
-            overflow: 'auto',
-            backgroundColor: 'black',
-            padding: '10px',
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(zoomMeetingsData, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
+      {zoomListData && Array.isArray(zoomListData.meetings) && (
+        <div
+          style={{
+            border: '1px solid #ccc',
             borderRadius: '4px',
-            color: 'white'
-          }}>
-            <pre>
-              {JSON.stringify(zoomMeetingsData, null, 2)}
-            </pre>
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>
+            Zoom Meeting Summaries (full report objects)
+          </h2>
+          -         <h3>Total Meetings: {zoomListData.meetings.length}</h3>
+          +         <h3>Total Meetings: {zoomListData.meetings.length}</h3>
+
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            -           <pre>{JSON.stringify(zoomListData.meetings, null, 2)}</pre>
+            +           <pre>{JSON.stringify(zoomListData.meetings, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+      {zoomParticipantsData && Array.isArray(zoomParticipantsData.participants) && (
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>Meeting Participants</h2>
+          <h3>Total Participants: {zoomParticipantsData.participants.length}</h3>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(zoomParticipantsData.participants, null, 2)}</pre>
           </div>
         </div>
       )}
