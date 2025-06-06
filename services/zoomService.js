@@ -4,22 +4,52 @@ import axios from 'axios';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // -----------------------------------------------------------------------------
-// NEW: Fetch participants for exactly one meeting UUID (using fetchPastMeetingParticipants)
+// NEW: Fetch participants for exactly one meeting UUID (using both endpoints)
 // -----------------------------------------------------------------------------
 export const getMeetingParticipantsForUUID = async (accessToken, meetingUUID) => {
-  // We rely on the existing logic in fetchPastMeetingParticipants,
-  // which handles single‐ vs double‐URL‐encoding and pagination.
-  //
-  // If fetchPastMeetingParticipants throws with code=3001 (meeting not found),
-  // we return an empty array to avoid exposing a server error to the client.
-
   try {
-    const participants = await fetchPastMeetingParticipants(meetingUUID, accessToken);
-    return participants;
+    // Fetch from both endpoints
+    const [pastParticipants, reportParticipants] = await Promise.all([
+      fetchPastMeetingParticipants(meetingUUID, accessToken).catch(err => {
+        const respData = err.response?.data || {};
+        if (respData.code === 3001) {
+          console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID} in past meetings endpoint`);
+          return [];
+        }
+        throw err;
+      }),
+      fetchReportMeetingParticipants(meetingUUID, accessToken).catch(err => {
+        console.warn(`Error fetching report participants for UUID ${meetingUUID}:`, err.message);
+        return [];
+      })
+    ]);
+
+    // Create a map of participants by user_id to merge data
+    const mergedParticipants = new Map();
+
+    // First add all past participants
+    pastParticipants.forEach(participant => {
+      if (participant.user_id) {
+        mergedParticipants.set(participant.user_id, { ...participant });
+      }
+    });
+
+    // Then merge in report participants data
+    reportParticipants.forEach(participant => {
+      if (participant.user_id) {
+        const existing = mergedParticipants.get(participant.user_id) || {};
+        mergedParticipants.set(participant.user_id, {
+          ...existing,
+          ...participant
+        });
+      }
+    });
+
+    return Array.from(mergedParticipants.values());
   } catch (err) {
+    // If both endpoints fail with 3001, return empty array
     const respData = err.response?.data || {};
     if (respData.code === 3001) {
-      // Meeting does not exist or is >1 year old (Zoom error 3001).
       console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID}`);
       return [];
     }
@@ -334,7 +364,7 @@ const fetchReportMeetingParticipants = async (meetingIdOrUUID, accessToken) => {
   }
 
   // Fall back if UUID attempt failed or returned no participants
-  nextPageToken = ''; 
+  nextPageToken = '';
   do {
     try {
       const response = await axios.get(
