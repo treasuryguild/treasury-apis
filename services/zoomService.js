@@ -4,23 +4,53 @@ import axios from 'axios';
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // -----------------------------------------------------------------------------
-// NEW: Fetch participants for exactly one meeting UUID (using fetchPastMeetingParticipants)
+// NEW: Fetch participants for exactly one meeting UUID (using both endpoints)
 // -----------------------------------------------------------------------------
 export const getMeetingParticipantsForUUID = async (accessToken, meetingUUID) => {
-  // We rely on the existing logic in fetchPastMeetingParticipants,
-  // which handles single‐ vs double‐URL‐encoding and pagination.
-  //
-  // If fetchPastMeetingParticipants throws with code=3001 (meeting not found),
-  // we return an empty array to avoid exposing a server error to the client.
-
   try {
-    const participants = await fetchPastMeetingParticipants(meetingUUID, accessToken);
-    return participants;
+    // Fetch from both endpoints
+    const [pastParticipants, reportParticipants] = await Promise.all([
+      fetchPastMeetingParticipants(meetingUUID, accessToken).catch(err => {
+        const respData = err.response?.data || {};
+        if (respData.code === 3001) {
+          console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID} in past meetings endpoint`);
+          return [];
+        }
+        throw err;
+      }),
+      fetchReportMeetingParticipants(meetingUUID, accessToken).catch(err => {
+        console.warn(`Error fetching report participants for UUID ${meetingUUID}:`, err.message);
+        return [];
+      })
+    ]);
+
+    // Create a map of participants by user_id to merge data
+    const mergedParticipants = new Map();
+
+    // First add all past participants
+    pastParticipants.forEach(participant => {
+      if (participant.user_id) {
+        mergedParticipants.set(participant.user_id, { ...participant });
+      }
+    });
+
+    // Then merge in report participants data
+    reportParticipants.forEach(participant => {
+      if (participant.user_id) {
+        const existing = mergedParticipants.get(participant.user_id) || {};
+        mergedParticipants.set(participant.user_id, {
+          ...existing,
+          ...participant
+        });
+      }
+    });
+
+    return Array.from(mergedParticipants.values());
   } catch (err) {
+    // If both endpoints fail with 3001, return empty array
     const respData = err.response?.data || {};
     if (respData.code === 3001) {
-      // Meeting does not exist or is >1 year old (Zoom error 3001).
-      console.warn(`Zoom reports “Meeting does not exist” for UUID ${meetingUUID}`);
+      console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID}`);
       return [];
     }
     // Other unexpected errors should bubble up
@@ -29,15 +59,15 @@ export const getMeetingParticipantsForUUID = async (accessToken, meetingUUID) =>
 };
 
 /**
- * List full meeting‐report objects via Zoom’s Report API, within an optional date range.
+ * List full meeting‐report objects via Zoom's Report API, within an optional date range.
  * 
  * @param accessToken - Zoom OAuth token
- * @param userId      - Zoom user ID (not “me”)
- * @param fromDate    - “YYYY-MM-DD” (inclusive). If omitted, Zoom defaults to 30 days ago.
- * @param toDate      - “YYYY-MM-DD” (inclusive). If omitted, Zoom defaults to today.
+ * @param userId      - Zoom user ID (not "me")
+ * @param fromDate    - "YYYY-MM-DD" (inclusive). If omitted, Zoom defaults to 30 days ago.
+ * @param toDate      - "YYYY-MM-DD" (inclusive). If omitted, Zoom defaults to today.
  */
 export const listMeetingSummaries = async (accessToken, fromDate, toDate) => {
-  // 1) Resolve a real Zoom userId (cannot use “me” for report endpoints).
+  // 1) Resolve a real Zoom userId (cannot use "me" for report endpoints).
   const usersResponse = await axios.get('https://api.zoom.us/v2/users', {
     params: { status: 'active', page_size: 1, page_number: 1 },
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -58,8 +88,8 @@ export const listMeetingSummaries = async (accessToken, fromDate, toDate) => {
  *
  * @param accessToken - Zoom OAuth token
  * @param userId      - Zoom user ID from listMeetingSummaries
- * @param fromDate    - “YYYY-MM-DD” (inclusive). If omitted, Zoom defaults to 30 days ago.
- * @param toDate      - “YYYY-MM-DD” (inclusive). If omitted, Zoom defaults to today.
+ * @param fromDate    - "YYYY-MM-DD" (inclusive). If omitted, Zoom defaults to 30 days ago.
+ * @param toDate      - "YYYY-MM-DD" (inclusive). If omitted, Zoom defaults to today.
  */
 export const fetchAllMeetingReports = async (accessToken, userId, fromDate, toDate) => {
   const reports = [];
@@ -78,7 +108,7 @@ export const fetchAllMeetingReports = async (accessToken, userId, fromDate, toDa
         next_page_token: nextPageToken || undefined,
       };
 
-      // If caller provided a fromDate, pass it as “from”
+      // If caller provided a fromDate, pass it as "from"
       if (fromDate) params.from = fromDate;
       if (toDate) params.to = toDate;
 
@@ -161,8 +191,7 @@ export const fetchAllMeetings = async (accessToken, userId = 'me') => {
  * 2) For each `meeting` object (with .id and .uuid), fetch participants in batches.
  *    We first try /past_meetings/{uuid}/participants (conditionally URL‐encoded).
  *    Only if Zoom returns code=3001 (“Meeting does not exist” or “too old”) do we fall back to
- *    /report/meetings/{id}/participants—but note that fallback will ALWAYS point to the
- *    *latest* instance of that same numeric ID, so you lose historical occurrences.
+ *    /report/meetings/{uuid}/participants
  */
 export const fetchParticipantsWithRateLimit = async (meetings, accessToken) => {
   const results = [];
@@ -195,8 +224,8 @@ export const fetchParticipantsWithRateLimit = async (meetings, accessToken) => {
 };
 
 /**
- * Try the UUID‐based “past_meetings” endpoint first (conditionally encoding).
- * If Zoom returns error code=3001 (“Meeting does not exist”), fall back to the numeric-ID “report” endpoint.
+ * Try the UUID‐based "past_meetings" endpoint first (conditionally encoding).
+ * If Zoom returns error code=3001 (“Meeting does not exist”), fall back to the "report" endpoint.
  */
 const fetchMeetingParticipantsEither = async (meeting, accessToken) => {
   try {
@@ -207,11 +236,11 @@ const fetchMeetingParticipantsEither = async (meeting, accessToken) => {
     if (respData.code === 3001) {
       // Zoom did not recognize that UUID (maybe >1 year old or never existed)
       console.log(
-        `UUID not found (or too old) for "${meeting.uuid}", falling back to numeric ID ${meeting.id}`
+        `UUID not found (or too old) for "${meeting.uuid}", falling back to fetchReportMeetingParticipants search`
       );
-      return await fetchReportMeetingParticipants(meeting.id, accessToken);
+      return await fetchReportMeetingParticipants(meeting.uuid, accessToken);
     }
-    // Other errors (e.g. rate-limit didn’t retry or 400/404), so just return an empty array
+    // Other errors (e.g. rate-limit didn't retry or 400/404), so just return an empty array
     console.error(
       `Unhandled error for UUID ${meeting.uuid}:`,
       respData || err.message
@@ -223,7 +252,7 @@ const fetchMeetingParticipantsEither = async (meeting, accessToken) => {
 /**
  * Fetch participants via `/past_meetings/{uuid}/participants`
  * → Must encode the UUID just enough so that Zoom sees the exact instance.
- * Zoom’s own docs say: “If the UUID begins with '/' or contains '//' → double-encode.”
+ * Zoom's own docs say: "If the UUID begins with '/' or contains '//' → double-encode."
  * Otherwise, single-encode (or even raw) is fine.
  */
 const fetchPastMeetingParticipants = async (meetingUUID, accessToken) => {
@@ -233,7 +262,7 @@ const fetchPastMeetingParticipants = async (meetingUUID, accessToken) => {
   if (meetingUUID.startsWith('/') || meetingUUID.includes('//')) {
     encodedUUID = encodeURIComponent(encodeURIComponent(meetingUUID));
   } else {
-    // Otherwise, a single encodeURIComponent keeps “==” or “+” safe in a URL path
+    // Otherwise, a single encodeURIComponent keeps "==" or "+" safe in a URL path
     encodedUUID = encodeURIComponent(meetingUUID);
   }
 
@@ -278,20 +307,71 @@ const fetchPastMeetingParticipants = async (meetingUUID, accessToken) => {
 };
 
 /**
- * Fetch participants via `/report/meetings/{meetingId}/participants` (numeric ID).
- * This always returns data for the *latest* instance of that meeting ID.
+ * Fetch participants via `/report/meetings/{meetingUuid}/participants`
  */
-const fetchReportMeetingParticipants = async (meetingId, accessToken) => {
+const fetchReportMeetingParticipants = async (meetingIdOrUUID, accessToken) => {
   const participants = [];
   let nextPageToken = '';
 
+  // First try with UUID
+  try {
+    let encodedUUID;
+    if (meetingIdOrUUID.startsWith('/') || meetingIdOrUUID.includes('//')) {
+      encodedUUID = encodeURIComponent(encodeURIComponent(meetingIdOrUUID));
+    } else {
+      encodedUUID = encodeURIComponent(meetingIdOrUUID);
+    }
+
+    do {
+      try {
+        const response = await axios.get(
+          `https://api.zoom.us/v2/report/meetings/${encodedUUID}/participants`,
+          {
+            params: {
+              page_size: 500,
+              next_page_token: nextPageToken || undefined,
+            },
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        participants.push(...(response.data.participants || []));
+        nextPageToken = response.data.next_page_token;
+      } catch (error) {
+        const status = error.response?.status;
+        const respData = error.response?.data || {};
+
+        if (status === 429) {
+          console.log(
+            `Rate limit hit on /report/meetings/${encodedUUID}, waiting before retry...`
+          );
+          await delay(2000);
+          continue;
+        }
+
+        // If UUID attempt fails, break 
+      }
+    } while (nextPageToken);
+
+    // If we got participants with UUID, return them
+    if (participants.length > 0) {
+      return participants;
+    }
+  } catch (error) {
+    console.log(`UUID attempt failed for ${meetingIdOrUUID}, trying numeric ID...`);
+  }
+
+  // Fall back if UUID attempt failed or returned no participants
+  nextPageToken = '';
   do {
     try {
       const response = await axios.get(
-        `https://api.zoom.us/v2/report/meetings/${meetingId}/participants`,
+        `https://api.zoom.us/v2/report/meetings/${meetingIdOrUUID}/participants`,
         {
           params: {
-            page_size: 500,            // max page size for /report endpoint
+            page_size: 500,
             next_page_token: nextPageToken || undefined,
           },
           headers: {
@@ -308,16 +388,16 @@ const fetchReportMeetingParticipants = async (meetingId, accessToken) => {
 
       if (status === 429) {
         console.log(
-          `Rate limit hit on /report/meetings/${meetingId}, waiting before retry...`
+          `Rate limit hit on /report/meetings/${meetingIdOrUUID}, waiting before retry...`
         );
         await delay(2000);
         continue;
       }
 
-      // Zoom can return 3001 here again (if even the numeric ID is too old or doesn’t exist),
-      // or 404/400 if it’s truly invalid—just stop and return what we have so far.
+      // Zoom can return 3001 here again,
+      // or 404/400 if it's truly invalid—just stop and return what we have so far.
       console.error(
-        `Error fetching participants from report endpoint for ID ${meetingId}:`,
+        `Error fetching participants from report endpoint for ID ${meetingIdOrUUID}:`,
         respData || error.message
       );
       break;
