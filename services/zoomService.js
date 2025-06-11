@@ -3,26 +3,80 @@ import axios from 'axios';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Add exponential backoff for rate limits with jitter
+const exponentialBackoff = async (retryCount = 0, maxRetries = 5) => {
+  const baseDelay = 2000; // 2 seconds
+  const maxDelay = 64000; // 64 seconds
+  const jitter = Math.random() * 1000; // Add up to 1 second of random jitter
+  const delay = Math.min(baseDelay * Math.pow(2, retryCount), maxDelay) + jitter;
+  await delay(delay);
+  return retryCount + 1;
+};
+
+// Rate limit tracking
+const rateLimitState = {
+  lastRequestTime: 0,
+  minRequestInterval: 100, // Minimum 100ms between requests
+  concurrentRequests: 0,
+  maxConcurrentRequests: 2, // Limit concurrent requests
+};
+
+// Helper to manage request timing and concurrency
+const waitForRateLimit = async () => {
+  const now = Date.now();
+  const timeSinceLastRequest = now - rateLimitState.lastRequestTime;
+
+  // Wait if we're making requests too quickly
+  if (timeSinceLastRequest < rateLimitState.minRequestInterval) {
+    await delay(rateLimitState.minRequestInterval - timeSinceLastRequest);
+  }
+
+  // Wait if we have too many concurrent requests
+  while (rateLimitState.concurrentRequests >= rateLimitState.maxConcurrentRequests) {
+    await delay(100);
+  }
+
+  rateLimitState.concurrentRequests++;
+  rateLimitState.lastRequestTime = Date.now();
+};
+
+// Helper to release request slot
+const releaseRequest = () => {
+  rateLimitState.concurrentRequests = Math.max(0, rateLimitState.concurrentRequests - 1);
+};
+
 // -----------------------------------------------------------------------------
 // NEW: Fetch participants for exactly one meeting UUID (using both endpoints)
 // -----------------------------------------------------------------------------
 export const getMeetingParticipantsForUUID = async (accessToken, meetingUUID) => {
   try {
-    // Fetch from both endpoints
-    const [pastParticipants, reportParticipants] = await Promise.all([
-      fetchPastMeetingParticipants(meetingUUID, accessToken).catch(err => {
-        const respData = err.response?.data || {};
-        if (respData.code === 3001) {
-          console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID} in past meetings endpoint`);
+    // Fetch from both endpoints with retries, but not concurrently
+    const pastParticipants = await fetchWithRetries(
+      () => fetchPastMeetingParticipants(meetingUUID, accessToken),
+      {
+        onError: (err) => {
+          const respData = err.response?.data || {};
+          if (respData.code === 3001) {
+            console.warn(`Zoom reports "Meeting does not exist" for UUID ${meetingUUID} in past meetings endpoint`);
+            return [];
+          }
+          throw err;
+        }
+      }
+    );
+
+    // Add a small delay between endpoints
+    await delay(500);
+
+    const reportParticipants = await fetchWithRetries(
+      () => fetchReportMeetingParticipants(meetingUUID, accessToken),
+      {
+        onError: (err) => {
+          console.warn(`Error fetching report participants for UUID ${meetingUUID}:`, err.message);
           return [];
         }
-        throw err;
-      }),
-      fetchReportMeetingParticipants(meetingUUID, accessToken).catch(err => {
-        console.warn(`Error fetching report participants for UUID ${meetingUUID}:`, err.message);
-        return [];
-      })
-    ]);
+      }
+    );
 
     // Create a map of participants by user_id to merge data
     const mergedParticipants = new Map();
@@ -30,18 +84,30 @@ export const getMeetingParticipantsForUUID = async (accessToken, meetingUUID) =>
     // First add all past participants
     pastParticipants.forEach(participant => {
       if (participant.user_id) {
-        mergedParticipants.set(participant.user_id, { ...participant });
+        mergedParticipants.set(participant.user_id, {
+          ...participant,
+          source: 'past_meetings'
+        });
       }
     });
 
     // Then merge in report participants data
     reportParticipants.forEach(participant => {
       if (participant.user_id) {
-        const existing = mergedParticipants.get(participant.user_id) || {};
-        mergedParticipants.set(participant.user_id, {
-          ...existing,
-          ...participant
-        });
+        const existing = mergedParticipants.get(participant.user_id);
+        if (existing) {
+          // Merge data, preferring non-null values from either source
+          mergedParticipants.set(participant.user_id, {
+            ...existing,
+            ...participant,
+            source: 'both'
+          });
+        } else {
+          mergedParticipants.set(participant.user_id, {
+            ...participant,
+            source: 'report'
+          });
+        }
       }
     });
 
@@ -405,4 +471,42 @@ const fetchReportMeetingParticipants = async (meetingIdOrUUID, accessToken) => {
   } while (nextPageToken);
 
   return participants;
+};
+
+// Helper function to handle retries with exponential backoff
+const fetchWithRetries = async (fetchFn, { maxRetries = 5, onError } = {}) => {
+  let retryCount = 0;
+  let lastError;
+  let result;
+
+  while (retryCount <= maxRetries) {
+    try {
+      await waitForRateLimit();
+      result = await fetchFn();
+      releaseRequest();
+      return result;
+    } catch (error) {
+      releaseRequest();
+      lastError = error;
+
+      if (error.response?.status === 429) {
+        const retryAfter = parseInt(error.response.headers['retry-after']) || 0;
+        if (retryAfter > 0) {
+          console.log(`Rate limit hit with retry-after: ${retryAfter}s`);
+          await delay(retryAfter * 1000);
+        } else {
+          console.log(`Rate limit hit, attempt ${retryCount + 1}/${maxRetries + 1}`);
+          retryCount = await exponentialBackoff(retryCount, maxRetries);
+        }
+        continue;
+      }
+
+      if (onError) {
+        return onError(error);
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
 };
