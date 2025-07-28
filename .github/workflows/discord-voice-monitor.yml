@@ -1,0 +1,45 @@
+name: Discord Voice Channel Monitor
+
+on:
+  #schedule:
+    # Runs every 5 minutes
+    #- cron: '*/5 * * * *'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  monitor-voice-channels:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Start Next.js server
+      run: |
+        npm run build
+        npm start &
+        sleep 30 # Wait for server to start
+      
+    - name: Call Discord Voice API and save to Supabase
+      env:
+        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        GUILD_ID: ${{ secrets.GUILD_ID }}
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        VOICE_ATTENDANCE_SAVE_API_URL: ${{ secrets.VOICE_ATTENDANCE_SAVE_API_URL }}
+      run: |
+        # Call the API and save to Supabase
+        curl -X POST "$VOICE_ATTENDANCE_SAVE_API_URL"
+        echo "Voice attendance data saved to Supabase"
+        
+    - name: Stop server
+      run: pkill -f "next"
+      if: always() 

@@ -23,6 +23,9 @@ const QueryTester: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [zoomParticipantsData, setZoomParticipantsData] = useState<any>(null);
+  // Discord API state variables
+  const [discordServerInsightsData, setDiscordServerInsightsData] = useState<any>(null);
+  const [discordVoiceAttendeesData, setDiscordVoiceAttendeesData] = useState<any>(null);
 
   const fetchData = async (
     queryParams: string | (() => string),
@@ -80,7 +83,7 @@ const QueryTester: React.FC = () => {
           url = `/api/zoom/listMeetings${actualQuery}`;
           break;
 
-        // NEW: “zoom-participants” hits our new /api/zoom/getMeetingParticipants
+        // NEW: "zoom-participants" hits our new /api/zoom/getMeetingParticipants
         case 'zoom-participants':
           headers = {
             'Content-Type': 'application/json',
@@ -95,6 +98,21 @@ const QueryTester: React.FC = () => {
             api_key: API_KEY,
           };
           url = '/api/getWallets';
+          break;
+
+        // Discord API endpoints
+        case 'discord-server-insights':
+          headers = {
+            'Content-Type': 'application/json',
+          };
+          url = '/api/discord/server-insights';
+          break;
+
+        case 'discord-voice-attendees':
+          headers = {
+            'Content-Type': 'application/json',
+          };
+          url = '/api/discord/voice-attendees';
           break;
 
         default:
@@ -118,6 +136,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(null); // clear previous participants
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         case 'contributors':
@@ -128,6 +148,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(null);
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         case 'gwallets':
@@ -138,6 +160,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(null);
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         case 'zoom-meetings':
@@ -148,6 +172,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(null);
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         case 'zoom-list':
@@ -158,6 +184,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(data);
           setZoomParticipantsData(null);
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         // NEW: store the participants result
@@ -169,6 +197,8 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(data); // data = { participants: [...] }
           setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
           break;
 
         case 'getWallets':
@@ -179,6 +209,33 @@ const QueryTester: React.FC = () => {
           setZoomListData(null);
           setZoomParticipantsData(null);
           setGetWalletsData(data);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
+          break;
+
+        // Discord API cases
+        case 'discord-server-insights':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
+          setGetWalletsData(null);
+          setDiscordServerInsightsData(data);
+          setDiscordVoiceAttendeesData(null);
+          break;
+
+        case 'discord-voice-attendees':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
+          setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(data);
           break;
       }
     } catch (err) {
@@ -291,6 +348,17 @@ const QueryTester: React.FC = () => {
         return `?uuid=${encodeURIComponent(rawUuid)}`;
       },
       endpoint: 'zoom-participants',
+    },
+    // Discord API queries
+    {
+      name: 'Discord Server Insights',
+      query: '',
+      endpoint: 'discord-server-insights',
+    },
+    {
+      name: 'Discord Voice Attendees',
+      query: '',
+      endpoint: 'discord-voice-attendees',
     },
   ];
 
@@ -517,8 +585,7 @@ const QueryTester: React.FC = () => {
           <h2 style={{ marginBottom: '10px' }}>
             Zoom Meeting Summaries (full report objects)
           </h2>
-          -         <h3>Total Meetings: {zoomListData.meetings.length}</h3>
-          +         <h3>Total Meetings: {zoomListData.meetings.length}</h3>
+          <h3>Total Meetings: {zoomListData.meetings.length}</h3>
 
           <div
             style={{
@@ -530,8 +597,7 @@ const QueryTester: React.FC = () => {
               color: 'white',
             }}
           >
-            -           <pre>{JSON.stringify(zoomListData.meetings, null, 2)}</pre>
-            +           <pre>{JSON.stringify(zoomListData.meetings, null, 2)}</pre>
+            <pre>{JSON.stringify(zoomListData.meetings, null, 2)}</pre>
           </div>
         </div>
       )}
@@ -559,6 +625,60 @@ const QueryTester: React.FC = () => {
             }}
           >
             <pre>{JSON.stringify(zoomParticipantsData.participants, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
+      {discordServerInsightsData && (
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>Discord Server Insights</h2>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(discordServerInsightsData, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
+      {discordVoiceAttendeesData && (
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>Discord Voice Attendees</h2>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(discordVoiceAttendeesData, null, 2)}</pre>
           </div>
         </div>
       )}
