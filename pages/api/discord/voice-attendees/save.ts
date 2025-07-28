@@ -1,10 +1,20 @@
 // pages/api/discord/voice-attendees/save.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { Client, GatewayIntentBits } from 'discord.js'
-import { supabaseAdmin } from '../../../../lib/supabaseClient'
+import { createClient } from '@supabase/supabase-js'
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN
 const GUILD_ID = process.env.GUILD_ID
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// Create Supabase client with service role key
+const supabaseAdmin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false
+    }
+})
 
 let client: Client | null = null
 let isReady = false
