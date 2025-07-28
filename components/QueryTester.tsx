@@ -26,6 +26,7 @@ const QueryTester: React.FC = () => {
   // Discord API state variables
   const [discordServerInsightsData, setDiscordServerInsightsData] = useState<any>(null);
   const [discordVoiceAttendeesData, setDiscordVoiceAttendeesData] = useState<any>(null);
+  const [discordAttendanceLogsData, setDiscordAttendanceLogsData] = useState<any>(null);
 
   const fetchData = async (
     queryParams: string | (() => string),
@@ -115,6 +116,14 @@ const QueryTester: React.FC = () => {
           url = '/api/discord/voice-attendees';
           break;
 
+        case 'discord-attendance-logs':
+          headers = {
+            'Content-Type': 'application/json',
+            api_key: API_KEY,
+          };
+          url = `/api/discord/voice-attendance-logs${actualQuery}`;
+          break;
+
         default:
           throw new Error(`Unknown endpoint: ${endpoint}`);
       }
@@ -138,6 +147,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'contributors':
@@ -150,6 +160,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'gwallets':
@@ -162,6 +173,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'zoom-meetings':
@@ -174,6 +186,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'zoom-list':
@@ -186,6 +199,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         // NEW: store the participants result
@@ -199,6 +213,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'getWallets':
@@ -211,6 +226,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(data);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         // Discord API cases
@@ -224,6 +240,7 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(data);
           setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
           break;
 
         case 'discord-voice-attendees':
@@ -236,6 +253,20 @@ const QueryTester: React.FC = () => {
           setGetWalletsData(null);
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(data);
+          setDiscordAttendanceLogsData(null);
+          break;
+
+        case 'discord-attendance-logs':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
+          setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(data);
           break;
       }
     } catch (err) {
@@ -359,6 +390,26 @@ const QueryTester: React.FC = () => {
       name: 'Discord Voice Attendees',
       query: '',
       endpoint: 'discord-voice-attendees',
+    },
+    {
+      name: 'Discord Attendance Logs (All)',
+      query: '',
+      endpoint: 'discord-attendance-logs',
+    },
+    {
+      name: 'Discord Attendance Logs (Limit 10)',
+      query: '?limit=10',
+      endpoint: 'discord-attendance-logs',
+    },
+    {
+      name: 'Discord Attendance Logs (By User)',
+      query: '?user_id=123456789',
+      endpoint: 'discord-attendance-logs',
+    },
+    {
+      name: 'Discord Attendance Logs (By Channel)',
+      query: '?channel_id=987654321',
+      endpoint: 'discord-attendance-logs',
     },
   ];
 
@@ -679,6 +730,34 @@ const QueryTester: React.FC = () => {
             }}
           >
             <pre>{JSON.stringify(discordVoiceAttendeesData, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
+      {discordAttendanceLogsData && (
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>Discord Attendance Logs</h2>
+          <h3>Total Logs: {discordAttendanceLogsData.data?.length || 0}</h3>
+          <div
+            style={{
+              maxHeight: '400px',
+              overflow: 'auto',
+              backgroundColor: 'black',
+              padding: '10px',
+              borderRadius: '4px',
+              color: 'white',
+            }}
+          >
+            <pre>{JSON.stringify(discordAttendanceLogsData, null, 2)}</pre>
           </div>
         </div>
       )}
