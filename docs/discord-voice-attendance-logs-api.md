@@ -66,14 +66,15 @@ You can combine these parameters as needed.
 {
   "data": [
     {
-      "id": "b1c2d3e4-f5a6-7890-1234-56789abcdef0",
       "username": "john_doe",
-      "display_name": "John",
-      "user_id": "123456789",
       "channel_name": "General",
-      "channel_id": "987654321",
-      "recorded_at": "2024-06-07T12:34:56.789Z"
+      "recorded_at": 1733151584
     },
+    {
+      "username": "jane_smith",
+      "channel_name": "Ambassador Events",
+      "recorded_at": 1733151322
+    }
     // ...more records
   ]
 }
@@ -81,7 +82,8 @@ You can combine these parameters as needed.
 
 ## Notes
 - Results are ordered by `recorded_at` (newest first).
-- All fields are returned for each record.
+- Only `username`, `channel_name`, and `recorded_at` fields are returned for each record.
+- The `recorded_at` field contains Unix timestamps (seconds since epoch).
 - If no records match, `data` will be an empty array.
 - This endpoint requires authentication with a valid API key.
 - Invalid or missing API keys will return a 401 Unauthorized response. 
