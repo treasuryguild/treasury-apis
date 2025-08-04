@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const { user_id, channel_id, limit } = req.query
         let query = supabase
             .from('discord_voice_attendance_logs')
-            .select('*')
+            .select('username, channel_name, recorded_at')
             .order('recorded_at', { ascending: false })
 
         if (user_id) {
@@ -38,7 +38,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (error) {
             return res.status(500).json({ error: error.message })
         }
-        res.status(200).json({ data })
+
+        // Convert recorded_at timestamps to Unix timestamps
+        const processedData = data?.map(record => ({
+            username: record.username,
+            channel_name: record.channel_name,
+            recorded_at: new Date(record.recorded_at).getTime()
+        })) || []
+
+        res.status(200).json({ data: processedData })
     } catch (err: any) {
         if (err.message === 'Invalid API key') {
             return res.status(401).json({ error: err.message });
