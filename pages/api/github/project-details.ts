@@ -31,7 +31,7 @@ function processProjectData(project: any) {
       }
       return acc;
     }, {});
-    return { ...item.content, fieldValues: fieldValuesMap };
+    return { ...item.content, fullDatabaseId: item.content?.id, fieldValues: fieldValuesMap };
   });
   return { title, fields: fields.nodes, items: processedItems };
 }
@@ -62,6 +62,8 @@ async function fetchProjectData(
       nodes {
         content {
           ... on Issue {
+            id
+            databaseId
             title
             body
             number
