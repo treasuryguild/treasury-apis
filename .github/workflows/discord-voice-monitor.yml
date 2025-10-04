@@ -26,13 +26,6 @@ jobs:
         
     - name: Install dependencies
       run: npm ci
-      
-    - name: Ensure no concurrent run (best-effort)
-      uses: softprops/turnstyle@v1
-      with:
-        poll-interval-seconds: 10
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run Discord Voice Monitor Script
       env:
