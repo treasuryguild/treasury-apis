@@ -119,7 +119,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Find the most active voice channel across all guilds
         const mostActiveChannel = allChannels.reduce((prev, current) =>
-            (prev.attendeeCount > current.attendeeCount) ? prev : current, { attendeeCount: 0 }
+            (prev.attendeeCount > current.attendeeCount) ? prev : current, 
+            { 
+                attendeeCount: 0, 
+                channelName: 'No Channel', 
+                guildName: 'No Guild',
+                channelId: '',
+                guildId: ''
+            }
         )
 
         let connectionInfo = null
