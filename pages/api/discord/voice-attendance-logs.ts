@@ -15,10 +15,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
         validateApiKey(req);
 
-        const { user_id, channel_id, limit } = req.query
+        const { user_id, channel_id, guild_id, limit } = req.query
         let query = supabase
             .from('discord_voice_attendance_logs')
-            .select('username, channel_name, recorded_at')
+            .select('username, channel_name, guild_name, recorded_at')
             .order('recorded_at', { ascending: false })
 
         if (user_id) {
@@ -26,6 +26,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         if (channel_id) {
             query = query.eq('channel_id', channel_id)
+        }
+        if (guild_id) {
+            query = query.eq('guild_id', guild_id)
         }
         if (limit) {
             const lim = parseInt(limit as string, 10)
@@ -43,6 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const processedData = data?.map(record => ({
             username: record.username,
             channel_name: record.channel_name,
+            guild_name: record.guild_name,
             recorded_at: new Date(record.recorded_at).getTime()
         })) || []
 

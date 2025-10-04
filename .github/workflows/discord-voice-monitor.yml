@@ -37,7 +37,7 @@ jobs:
     - name: Run Discord Voice Monitor Script
       env:
         DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-        GUILD_ID: ${{ secrets.GUILD_ID }}
+        GUILD_IDS: ${{ secrets.GUILD_IDS }}
         NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         POLL_INTERVAL_MS: 300000
