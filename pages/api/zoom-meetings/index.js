@@ -1,7 +1,7 @@
 // pages/api/zoom-meetings/index.js
 import { validateApiKey, getZoomAccessToken } from '../../../services/authService';
 import { listMeetingSummaries, getMeetingParticipantsForUUID } from '../../../services/zoomService';
-import { parseDate, validateDateRange } from '../../../utils/dateHelpers';
+import { parseDate, validateDateRange, getMonthsDifference } from '../../../utils/dateHelpers';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -16,9 +16,44 @@ export default async function handler(req, res) {
 
     const { startDate, endDate, includeMissingData = 'true' } = req.query;
 
-    const parsedStartDate = startDate ? parseDate(startDate) : null;
-    const parsedEndDate = endDate ? parseDate(endDate) : new Date();
+    let parsedStartDate = null;
+    let parsedEndDate = new Date();
 
+    // Parse start date with better error handling
+    if (startDate) {
+      try {
+        parsedStartDate = parseDate(startDate);
+      } catch (error) {
+        return res.status(400).json({
+          error: 'Invalid Start Date',
+          message: error.message,
+          details: {
+            providedValue: startDate,
+            supportedFormats: ['DD.MM.YYYY', 'DD.MM.YY', 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD/MM/YY'],
+            examples: ['15.03.2024', '15.03.24', '2024-03-15', '15/03/2024', '15/03/24']
+          }
+        });
+      }
+    }
+
+    // Parse end date with better error handling
+    if (endDate) {
+      try {
+        parsedEndDate = parseDate(endDate);
+      } catch (error) {
+        return res.status(400).json({
+          error: 'Invalid End Date',
+          message: error.message,
+          details: {
+            providedValue: endDate,
+            supportedFormats: ['DD.MM.YYYY', 'DD.MM.YY', 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD/MM/YY'],
+            examples: ['15.03.2024', '15.03.24', '2024-03-15', '15/03/2024', '15/03/24']
+          }
+        });
+      }
+    }
+
+    // Validate date range with better error handling
     try {
       validateDateRange(parsedStartDate, parsedEndDate);
     } catch (error) {
@@ -26,14 +61,25 @@ export default async function handler(req, res) {
         error: 'Invalid Date Range',
         message: error.message,
         details: {
-          startDate,
-          endDate,
-          parsedStartDate: parsedStartDate?.toISOString(),
-          parsedEndDate: parsedEndDate?.toISOString(),
-          maximumRange: '10 months',
-          provided: parsedStartDate && parsedEndDate ?
-            `${Math.abs(getMonthsDifference(parsedStartDate, parsedEndDate))} months` :
-            'incomplete date range'
+          startDate: {
+            provided: startDate,
+            parsed: parsedStartDate?.toISOString(),
+            formatted: parsedStartDate?.toLocaleDateString()
+          },
+          endDate: {
+            provided: endDate,
+            parsed: parsedEndDate?.toISOString(),
+            formatted: parsedEndDate?.toLocaleDateString()
+          },
+          constraints: {
+            maximumRange: '10 months',
+            maximumFutureDate: '1 year from today',
+            supportedFormats: ['DD.MM.YYYY', 'DD.MM.YY', 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD/MM/YY']
+          },
+          rangeInfo: parsedStartDate && parsedEndDate ? {
+            duration: `${Math.abs(getMonthsDifference(parsedStartDate, parsedEndDate))} months`,
+            isValidRange: parsedEndDate >= parsedStartDate
+          } : 'incomplete date range'
         }
       });
     }
@@ -99,6 +145,15 @@ export default async function handler(req, res) {
           dateRange: {
             earliest: meetingsWithParticipants.find(m => m.start_time)?.start_time || null,
             latest: [...meetingsWithParticipants].reverse().find(m => m.start_time)?.start_time || null
+          }
+        },
+        dateFormatInfo: {
+          supportedFormats: ['DD.MM.YYYY', 'DD.MM.YY', 'YYYY-MM-DD', 'DD/MM/YYYY', 'DD/MM/YY'],
+          examples: ['15.03.2024', '15.03.24', '2024-03-15', '15/03/2024', '15/03/24'],
+          constraints: {
+            maximumRange: '10 months',
+            maximumFutureDate: '1 year from today',
+            note: 'Dates are automatically converted to ISO format for processing'
           }
         }
       }
