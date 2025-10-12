@@ -27,6 +27,8 @@ const QueryTester: React.FC = () => {
   const [discordServerInsightsData, setDiscordServerInsightsData] = useState<any>(null);
   const [discordVoiceAttendeesData, setDiscordVoiceAttendeesData] = useState<any>(null);
   const [discordAttendanceLogsData, setDiscordAttendanceLogsData] = useState<any>(null);
+  // GitHub API state variables
+  const [githubProjectStatusUpdateData, setGithubProjectStatusUpdateData] = useState<any>(null);
 
   const fetchData = async (
     queryParams: string | (() => string),
@@ -124,11 +126,19 @@ const QueryTester: React.FC = () => {
           url = `/api/discord/voice-attendance-logs${actualQuery}`;
           break;
 
+        case 'github-project-status-update':
+          headers = {
+            api_key: API_KEY,
+          };
+          url = `/api/github/update-project-status${actualQuery}`;
+          break;
+
         default:
           throw new Error(`Unknown endpoint: ${endpoint}`);
       }
 
       const response = await fetch(url, { headers });
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -148,6 +158,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         case 'contributors':
@@ -161,6 +172,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         case 'gwallets':
@@ -174,6 +186,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         case 'zoom-meetings':
@@ -187,6 +200,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         case 'zoom-list':
@@ -200,6 +214,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         // NEW: store the participants result
@@ -214,6 +229,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         case 'getWallets':
@@ -227,6 +243,7 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(null);
           break;
 
         // Discord API cases
@@ -267,6 +284,21 @@ const QueryTester: React.FC = () => {
           setDiscordServerInsightsData(null);
           setDiscordVoiceAttendeesData(null);
           setDiscordAttendanceLogsData(data);
+          setGithubProjectStatusUpdateData(null);
+          break;
+
+        case 'github-project-status-update':
+          setResults(null);
+          setContributorsData(null);
+          setWalletsData(null);
+          setZoomMeetingsData(null);
+          setZoomListData(null);
+          setZoomParticipantsData(null);
+          setGetWalletsData(null);
+          setDiscordServerInsightsData(null);
+          setDiscordVoiceAttendeesData(null);
+          setDiscordAttendanceLogsData(null);
+          setGithubProjectStatusUpdateData(data);
           break;
       }
     } catch (err) {
@@ -410,6 +442,17 @@ const QueryTester: React.FC = () => {
       name: 'Discord Attendance Logs (By Channel)',
       query: '?channel_id=987654321',
       endpoint: 'discord-attendance-logs',
+    },
+    // GitHub Project Status Update queries
+    {
+      name: 'GitHub: Update Audited → Archived',
+      query: '?owner=SingularityNet-Ambassador-Program&projectNumber=22',
+      endpoint: 'github-project-status-update',
+    },
+    {
+      name: 'GitHub: Update Audited → Archived (Explicit Defaults)',
+      query: '?owner=SingularityNet-Ambassador-Program&projectNumber=22&fromStatus=Audited&toStatus=Archived',
+      endpoint: 'github-project-status-update',
     },
   ];
 
@@ -758,6 +801,80 @@ const QueryTester: React.FC = () => {
             }}
           >
             <pre>{JSON.stringify(discordAttendanceLogsData, null, 2)}</pre>
+          </div>
+        </div>
+      )}
+
+      {githubProjectStatusUpdateData && (
+        <div
+          style={{
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            padding: '20px',
+            backgroundColor: 'black',
+            color: 'white',
+            marginTop: '20px',
+          }}
+        >
+          <h2 style={{ marginBottom: '10px' }}>GitHub Project Status Update Results</h2>
+          <div style={{ marginBottom: '15px' }}>
+            <h3 style={{ color: '#4CAF50' }}>✅ {githubProjectStatusUpdateData.message}</h3>
+            <p><strong>Updated Count:</strong> {githubProjectStatusUpdateData.updatedCount}</p>
+            {githubProjectStatusUpdateData.errorCount > 0 && (
+              <p style={{ color: '#f44336' }}><strong>Error Count:</strong> {githubProjectStatusUpdateData.errorCount}</p>
+            )}
+          </div>
+          
+          {githubProjectStatusUpdateData.updatedItems && githubProjectStatusUpdateData.updatedItems.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h3>Successfully Updated Items:</h3>
+              <div
+                style={{
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  backgroundColor: '#1a1a1a',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  color: 'white',
+                }}
+              >
+                <pre>{JSON.stringify(githubProjectStatusUpdateData.updatedItems, null, 2)}</pre>
+              </div>
+            </div>
+          )}
+
+          {githubProjectStatusUpdateData.errors && githubProjectStatusUpdateData.errors.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h3 style={{ color: '#f44336' }}>Errors:</h3>
+              <div
+                style={{
+                  maxHeight: '300px',
+                  overflow: 'auto',
+                  backgroundColor: '#2a1a1a',
+                  padding: '10px',
+                  borderRadius: '4px',
+                  color: 'white',
+                }}
+              >
+                <pre>{JSON.stringify(githubProjectStatusUpdateData.errors, null, 2)}</pre>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h3>Full Response:</h3>
+            <div
+              style={{
+                maxHeight: '400px',
+                overflow: 'auto',
+                backgroundColor: 'black',
+                padding: '10px',
+                borderRadius: '4px',
+                color: 'white',
+              }}
+            >
+              <pre>{JSON.stringify(githubProjectStatusUpdateData, null, 2)}</pre>
+            </div>
           </div>
         </div>
       )}
