@@ -18,6 +18,7 @@ Welcome to the API documentation. Here you'll find comprehensive guides and docu
 ### GitHub APIs
 - [GitHub Organization Details API](https://github.com/treasuryguild/treasury-apis/wiki/github-org-details-api)
 - [GitHub Project API](https://github.com/treasuryguild/treasury-apis/wiki/github-project-api)
+- [GitHub Project Status Update API](https://github.com/treasuryguild/treasury-apis/wiki/github-project-status-update-api)
 
 ### Discord APIs
 - [Discord Voice Attendance Logs API](https://github.com/treasuryguild/treasury-apis/wiki/discord-voice-attendance-logs-api)
