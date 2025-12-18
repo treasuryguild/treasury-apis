@@ -26,50 +26,79 @@ GET /api/discord/voice-attendance-logs
 - `channel_id` — Filter by Discord channel ID
 - `guild_id` — Filter by Discord server (guild) ID
 - `limit` — Limit the number of results (integer)
+- `startDate` — Inclusive start date in `dd.mm.yy` (UTC start of day)
+- `endDate` — Inclusive end date in `dd.mm.yy` (UTC end of day)
 
-You can combine these parameters as needed.
+You can combine these parameters as needed. Date parameters can be used independently or together.
 
 ## Example Requests
 
 - **Fetch all logs (most recent first):**
+
   ```
   GET /api/discord/voice-attendance-logs
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch the 10 most recent logs:**
+
   ```
   GET /api/discord/voice-attendance-logs?limit=10
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch logs for a specific user:**
+
   ```
   GET /api/discord/voice-attendance-logs?user_id=123456789
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch logs for a specific channel:**
+
   ```
   GET /api/discord/voice-attendance-logs?channel_id=987654321
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch logs for a specific Discord server:**
+
   ```
   GET /api/discord/voice-attendance-logs?guild_id=111222333444555666
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch the 5 most recent logs for a user in a channel:**
+
   ```
   GET /api/discord/voice-attendance-logs?user_id=123456789&channel_id=987654321&limit=5
   Headers: api_key: YOUR_API_KEY
   ```
 
 - **Fetch logs for a specific user in a specific server:**
+
   ```
   GET /api/discord/voice-attendance-logs?user_id=123456789&guild_id=111222333444555666
+  Headers: api_key: YOUR_API_KEY
+  ```
+
+- **Fetch logs within a date range (inclusive):**
+
+  ```
+  GET /api/discord/voice-attendance-logs?startDate=01.12.25&endDate=31.12.25
+  Headers: api_key: YOUR_API_KEY
+  ```
+
+- **Fetch logs from a start date onward:**
+
+  ```
+  GET /api/discord/voice-attendance-logs?startDate=15.12.25
+  Headers: api_key: YOUR_API_KEY
+  ```
+
+- **Fetch logs up to an end date:**
+  ```
+  GET /api/discord/voice-attendance-logs?endDate=20.12.25
   Headers: api_key: YOUR_API_KEY
   ```
 
@@ -96,6 +125,7 @@ You can combine these parameters as needed.
 ```
 
 ## Notes
+
 - Results are ordered by `recorded_at` (newest first).
 - The response includes `username`, `channel_name`, `guild_name`, and `recorded_at` fields for each record.
 - The `recorded_at` field contains Unix timestamps (milliseconds since epoch).
@@ -104,6 +134,12 @@ You can combine these parameters as needed.
 - This endpoint requires authentication with a valid API key.
 - Invalid or missing API keys will return a 401 Unauthorized response.
 - Use the `guild_id` parameter to filter results for a specific Discord server when monitoring multiple servers.
+- `startDate` and `endDate` are optional. If provided, they must be in `dd.mm.yy` format (e.g. `01.12.25`).
+- When only `startDate` is provided, results from that day (00:00:00.000 UTC) onward are returned.
+- When only `endDate` is provided, results up to that day (23:59:59.999 UTC) are returned.
+- When both are provided, results are returned for the inclusive range; `startDate` must be on or before `endDate`.
+- Invalid date formats return a `400` response with a helpful error message.
+- If no dates are provided, results are not filtered by date (still ordered by newest first).
 
 ## Multi-Server Support
 
@@ -131,4 +167,8 @@ curl "https://your-domain.com/api/discord/voice-attendance-logs?user_id=98765432
 # Get logs for a specific user in a specific server
 curl "https://your-domain.com/api/discord/voice-attendance-logs?user_id=987654321098765432&guild_id=123456789012345678" \
   -H "api_key: your-api-key"
-``` 
+
+# Get logs within a date range for a given server
+curl "https://your-domain.com/api/discord/voice-attendance-logs?guild_id=123456789012345678&startDate=01.12.25&endDate=31.12.25" \
+  -H "api_key: your-api-key"
+```
