@@ -2,36 +2,89 @@ name: Discord Voice Channel Monitor
 
 on:
   schedule:
+    # Runs monthly (UTC)
+    - cron: "0 0 1 * *"
     # Runs every 15 minutes
-    - cron: '*/15 * * * *'
+    - cron: "*/15 * * * *"
   workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: write
 
 concurrency:
   group: discord-voice-monitor
   cancel-in-progress: false
 
 jobs:
+  update-readme-timestamp:
+    if: github.event_name == 'schedule' && github.event.schedule == '0 0 1 * *'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update README monthly timestamp
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TIMESTAMP="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          START_MARKER='<!-- MONTHLY_TIMESTAMP_START -->'
+          END_MARKER='<!-- MONTHLY_TIMESTAMP_END -->'
+
+          if grep -q "$START_MARKER" README.md && grep -q "$END_MARKER" README.md; then
+            awk -v ts="$TIMESTAMP" -v start="$START_MARKER" -v end="$END_MARKER" '
+              $0 ~ start { print; print "Last monthly update: " ts; skip=1; next }
+              $0 ~ end { skip=0; print; next }
+              !skip { print }
+            ' README.md > README.tmp && mv README.tmp README.md
+          else
+            {
+              printf "\n%s\n" "$START_MARKER"
+              printf "Last monthly update: %s\n" "$TIMESTAMP"
+              printf "%s\n" "$END_MARKER"
+            } >> README.md
+          fi
+
+      - name: Commit and push README update
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet README.md; then
+            echo "No README changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git commit -m "chore: update README monthly timestamp"
+          git push
+
   monitor-voice-channels:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/15 * * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 360
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        
-    - name: Install dependencies
-      run: npm ci
 
-    - name: Run Discord Voice Monitor Script
-      env:
-        DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-        GUILD_IDS: ${{ secrets.GUILD_IDS }}
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        POLL_INTERVAL_MS: 300000
-      run: node scripts/discord-voice-monitor.js 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Discord Voice Monitor Script
+        env:
+          DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
+          GUILD_IDS: ${{ secrets.GUILD_IDS }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          POLL_INTERVAL_MS: 300000
+        run: node scripts/discord-voice-monitor.js
