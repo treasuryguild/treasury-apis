@@ -1,6 +1,6 @@
 // pages/api/voice-attendees.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { Client, GatewayIntentBits } from 'discord.js'
+import { Client, Intents } from 'discord.js'
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN
 const GUILD_IDS = process.env.GUILD_IDS // Comma-separated list of guild IDs
@@ -13,8 +13,8 @@ async function initClient() {
 
     client = new Client({
         intents: [
-            GatewayIntentBits.Guilds,
-            GatewayIntentBits.GuildVoiceStates
+            Intents.FLAGS.GUILDS,
+            Intents.FLAGS.GUILD_VOICE_STATES
         ]
     })
 
@@ -65,11 +65,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }))
 
             // Get voice channels with participants
-            const voiceChannels = fullGuild.channels.cache.filter(ch => ch?.isVoiceBased())
+            const voiceChannels = fullGuild.channels.cache.filter((ch) =>
+                ch?.type === 'GUILD_VOICE' || ch?.type === 'GUILD_STAGE_VOICE'
+            )
             const channelInfo = []
 
             for (const [channelId, channel] of Array.from(voiceChannels.entries())) {
-                if (!channel?.isVoiceBased()) continue
+                if (!(channel?.type === 'GUILD_VOICE' || channel?.type === 'GUILD_STAGE_VOICE')) continue
 
                 const channelAttendees = attendees.filter(a => a.channelId === channelId)
 
