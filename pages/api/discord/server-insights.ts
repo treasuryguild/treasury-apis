@@ -1,6 +1,6 @@
 // pages/api/discord/server-insights.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
-import { Client, GatewayIntentBits, ChannelType } from 'discord.js'
+import { Client, Intents } from 'discord.js'
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN
 const GUILD_ID = process.env.GUILD_ID
@@ -13,9 +13,9 @@ async function initDiscordClient() {
 
     // Try with all intents first, fallback to basic intents if needed
     const intents = [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMembers
+        Intents.FLAGS.GUILDS,
+        Intents.FLAGS.GUILD_MESSAGES,
+        Intents.FLAGS.GUILD_MEMBERS
     ]
 
     client = new Client({ intents })
@@ -32,7 +32,7 @@ async function initDiscordClient() {
 
             // Fallback to basic intents
             client = new Client({
-                intents: [GatewayIntentBits.Guilds]
+                intents: [Intents.FLAGS.GUILDS]
             })
 
             client.once('ready', () => {
@@ -72,7 +72,7 @@ async function getMessageCounts(guild: any) {
     }
 
     // Get all text channels
-    const textChannels = guild.channels.cache.filter((ch: any) => ch.type === ChannelType.GuildText)
+    const textChannels = guild.channels.cache.filter((ch: any) => ch.type === 'GUILD_TEXT')
 
     // Fetch messages from each channel (limited to last 100 messages per channel for performance)
     for (const [channelId, channel] of textChannels) {
