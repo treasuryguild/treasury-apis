@@ -290,10 +290,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          RECOGNITIONS_JSON=$(jq -c '.recognitions' recognitions.json)
-          # Split recognitions into batches to avoid Netlify/serverless timeouts
-          BATCH_SIZE=800  # must be <= MAX_RECOGNITIONS_PER_REQUEST enforced by the API
-          TOTAL=$(echo "$RECOGNITIONS_JSON" | jq 'length')
+          # Split recognitions into batches to avoid Netlify/serverless timeouts.
+          # Keep this aligned with client behavior unless inject-cache enforces a server-side max.
+          BATCH_SIZE=200
+          TOTAL=$(jq '.recognitions | length' recognitions.json)
 
           echo "Total recognitions: $TOTAL"
 
@@ -301,27 +301,33 @@ jobs:
           while [ "$i" -lt "$TOTAL" ]; do
             echo "Injecting batch starting at index $i"
 
-            BATCH=$(echo "$RECOGNITIONS_JSON" | jq ".[$i:($i + $BATCH_SIZE)]")
-
-            # Build the request body expected by inject-cache.js
-            BODY=$(jq -n \
+            # Build request body from file directly to avoid shell argument limits.
+            jq -c \
               --arg pid "${{ secrets.DASHBOARD_REFRESH_PROJECT_ID }}" \
-              --argjson rec "$BATCH" \
-              '{project_id: $pid, recognitions: $rec}')
+              --argjson start "$i" \
+              --argjson size "$BATCH_SIZE" \
+              '{project_id: $pid, recognitions: (.recognitions[$start:($start + $size)])}' \
+              recognitions.json > inject-body.json
 
-            curl -sS -X POST \
+            STATUS_CODE=$(curl -sS -X POST \
               -H "Content-Type: application/json" \
               -H "x-refresh-key: ${{ secrets.DASHBOARD_REFRESH_KEY }}" \
-              -d "$BODY" \
+              --data-binary @inject-body.json \
+              -w "%{http_code}" \
               "${{ secrets.DASHBOARD_REFRESH_BASE_URL }}/api/dashboard_recognitions/inject-cache" \
-              -o inject-response.json
+              -o inject-response.json)
 
-            echo "Inject response for batch starting at $i:"
+            echo "Inject HTTP status for batch starting at $i: $STATUS_CODE"
+            echo "Inject response body for batch starting at $i:"
             cat inject-response.json
 
-            # Optionally fail if the response contains an error field
+            if [ "$STATUS_CODE" -lt 200 ] || [ "$STATUS_CODE" -ge 300 ]; then
+              echo "ERROR: injection endpoint returned non-2xx status ($STATUS_CODE)" >&2
+              exit 1
+            fi
+
             if jq -e '.error' inject-response.json > /dev/null; then
-              echo "ERROR: injection endpoint returned an error" >&2
+              echo "ERROR: injection endpoint returned an error payload" >&2
               exit 1
             fi
 

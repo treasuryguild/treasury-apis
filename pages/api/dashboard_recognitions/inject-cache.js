@@ -1,5 +1,19 @@
 import supabase from '../../../lib/supabaseClient';
 
+const DEFAULT_MAX_RECOGNITIONS_PER_REQUEST = 200;
+
+const getMaxRecognitionsPerRequest = () => {
+  const raw = process.env.MAX_RECOGNITIONS_PER_REQUEST;
+  if (!raw) return DEFAULT_MAX_RECOGNITIONS_PER_REQUEST;
+
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return DEFAULT_MAX_RECOGNITIONS_PER_REQUEST;
+  }
+
+  return Math.floor(parsed);
+};
+
 const validateRefreshKey = (req) => {
   const refreshKeyHeader = req.headers['x-refresh-key'];
   const validKey = process.env.DASHBOARD_REFRESH_KEY;
@@ -62,6 +76,9 @@ const normalizeTimestamp = (value) => {
 export const config = {
   api: {
     responseLimit: false,
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
   },
 };
 
@@ -97,6 +114,16 @@ export default async function handler(req, res) {
       return res.status(400).json({
         error: 'Bad Request',
         message: 'Body must include a recognitions array',
+      });
+    }
+
+    const maxRecognitionsPerRequest = getMaxRecognitionsPerRequest();
+    if (recognitions.length > maxRecognitionsPerRequest) {
+      return res.status(413).json({
+        error: 'Payload Too Large',
+        message: `Too many recognitions in one request. Maximum allowed is ${maxRecognitionsPerRequest}.`,
+        maxRecognitionsPerRequest,
+        receivedCount: recognitions.length,
       });
     }
 
