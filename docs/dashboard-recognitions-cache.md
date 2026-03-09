@@ -31,7 +31,7 @@
   - Batching is currently handled by callers (e.g. dashboard page, future GitHub Action) rather than inside this handler.
 
 - Cache read endpoint (implemented): `pages/api/dashboard_recognitions/cache.js`
-  - Validates `api_key` header against `SERVER_API_KEY`.
+  - Validates API key header against `SERVER_API_KEY` (recommended: `x-api-key`; legacy `api_key` is still accepted).
   - Paginates reads from `dashboard_recognitions_cache` in 1000-row pages for a single `project_id`.
   - Maps rows back into recognition objects and applies `filterRecognitions` with the same filters as the live API.
   - Returns `recognitions` plus metadata including `lastSyncedAt` derived from the latest `synced_at` value in the cache.
@@ -125,7 +125,7 @@ The **canonical behavior** remains the JS implementation (transformRecognitions 
 - Route:
   - `GET /api/dashboard_recognitions/cache`
 - Behavior:
-  - Validates API key via `api_key` header (`SERVER_API_KEY`).
+  - Validates API key via headers (`x-api-key` recommended; legacy `api_key` and Bearer auth are accepted) against `SERVER_API_KEY`.
   - Accepts same query filters as current route:
     - `startDate`, `endDate`, `subgroup`, `contributor_id`, `task_name`.
     - `project-id` header for `project_id`.
@@ -171,7 +171,7 @@ File: `pages/dashboard-recognitions.tsx`
 - Button click flow (to be implemented):
   1. Frontend calls `POST /api/dashboard_recognitions/refresh` with:
   - `project-id` in headers.
-  - `api_key` in headers (same API key as used by the GitHub Action, but provided from server-side config).
+  - `x-api-key` in headers (same API key as used by the GitHub Action, but provided from server-side config).
   - Authorization (e.g. user must be signed in / have admin role).
   2. The refresh endpoint **must not perform an unbounded full refresh inside a single Netlify/serverless invocation**. Instead, it should:
   - Either trigger the same batched GitHub Action flow used for automatic refreshes, and return quickly ("refresh started"), **or**
@@ -205,7 +205,7 @@ Repository: [treasuryguild/treasury-system-v4](https://github.com/treasuryguild/
 
 - `GET ${{ secrets.DASHBOARD_REFRESH_BASE_URL }}/api/dashboard_recognitions?project_id=...` (plus any filters if needed)
 - Headers:
-  - `api_key: ${{ secrets.SERVER_API_KEY }}`
+  - `x-api-key: ${{ secrets.SERVER_API_KEY }}`
   - `project-id: ${{ secrets.DASHBOARD_REFRESH_PROJECT_ID }}`
 
 4. Call the treasury-apis injection endpoint to write into the cache **in batches**:
@@ -234,7 +234,7 @@ Repository: [treasuryguild/treasury-system-v4](https://github.com/treasuryguild/
 - GitHub Actions secrets in `treasury-system-v4` (transactions repo):
   - `DASHBOARD_REFRESH_BASE_URL`: base URL for the treasury-apis instance (e.g. `https://treasury-apis.example.com`).
   - `DASHBOARD_REFRESH_PROJECT_ID`: the specific `project_id` used when calling the dashboard recognitions APIs.
-  - `SERVER_API_KEY`: API key secret sent in the `api_key` header when calling `/api/dashboard_recognitions`; this should mirror the `SERVER_API_KEY` value configured for the treasury-apis deployment.
+  - `SERVER_API_KEY`: API key secret sent in the `x-api-key` header when calling `/api/dashboard_recognitions`; this should mirror the `SERVER_API_KEY` value configured for the treasury-apis deployment.
   - `DASHBOARD_REFRESH_KEY`: refresh secret sent in the `x-refresh-key` header when calling `/api/dashboard_recognitions/inject-cache`; this should match the value of `DASHBOARD_REFRESH_KEY` configured for the treasury-apis deployment and be different from `SERVER_API_KEY`.
 
 - The refresh endpoint:
@@ -273,7 +273,7 @@ jobs:
           set -euo pipefail
 
           RESPONSE=$(curl -sS \
-            -H "api_key: ${{ secrets.SERVER_API_KEY }}" \
+            -H "x-api-key: ${{ secrets.SERVER_API_KEY }}" \
             -H "project-id: ${{ secrets.DASHBOARD_REFRESH_PROJECT_ID }}" \
             "${{ secrets.DASHBOARD_REFRESH_BASE_URL }}/api/dashboard_recognitions")
 
@@ -301,7 +301,7 @@ jobs:
           while [ "$i" -lt "$TOTAL" ]; do
             echo "Injecting batch starting at index $i"
 
-            BATCH=$(echo "$RECOGNITIONS_JSON" | jq ".[${i}:(.${TOTAL} | tonumber) ] | .[:$BATCH_SIZE]")
+            BATCH=$(echo "$RECOGNITIONS_JSON" | jq ".[$i:($i + $BATCH_SIZE)]")
 
             # Build the request body expected by inject-cache.js
             BODY=$(jq -n \
