@@ -1,8 +1,24 @@
 import supabase from '../../../lib/supabaseClient';
 import { filterRecognitions } from '../../../utils/transformRecognitions';
 
+// Accept multiple header formats because some proxies strip underscore headers.
+const getApiKeyFromRequest = (req) => {
+  const legacyApiKey = req.headers['api_key'];
+  const xApiKey = req.headers['x-api-key'];
+  const authHeader = req.headers.authorization || req.headers.Authorization;
+
+  if (legacyApiKey) return legacyApiKey;
+  if (xApiKey) return xApiKey;
+
+  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    return authHeader.slice('Bearer '.length).trim();
+  }
+
+  return null;
+};
+
 const validateApiKey = (req) => {
-  const apiKey = req.headers['api_key'];
+  const apiKey = getApiKeyFromRequest(req);
   const validApiKey = process.env.SERVER_API_KEY;
 
   if (!apiKey || apiKey !== validApiKey) {
