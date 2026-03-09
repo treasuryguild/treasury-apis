@@ -35,20 +35,51 @@ function generateShortHash(taskName = '', date = '', labels = '') {
 }
 
 /**
+ * Normalizes a value to an array.
+ * Supports legacy payloads where array-like data is stored as an object.
+ * @param {any} value
+ * @returns {Array}
+ */
+function toArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'object') return [];
+  return Object.values(value);
+}
+
+/**
+ * Extracts contributor IDs from array or object payloads.
+ * @param {any} contributors
+ * @returns {string[]}
+ */
+function getContributorIds(contributors) {
+  if (Array.isArray(contributors)) {
+    return contributors.filter(Boolean);
+  }
+
+  if (contributors && typeof contributors === 'object') {
+    return Object.keys(contributors);
+  }
+
+  return [];
+}
+
+/**
  * Transforms raw transaction data into recognition records with faulty transaction filtering
  * @param {Array} rawData - Array of transaction records from the database
  * @returns {Array} Transformed data with recognition records, excluding faulty transactions
  */
 export function transformTransactionData(rawData) {
+  const sourceTransactions = toArray(rawData);
+
   // Get faulty transaction filters from the raw data
-  const faultyTxFilters = rawData.filter(t => 
+  const faultyTxFilters = sourceTransactions.filter(t => 
     t.tx_json?.msg && t.tx_json.msg[0] === "FaultyTx-Filter"
   );
 
   // First, apply faulty transaction filtering
-  const processedData = rawData.map(transaction => {
+  const processedData = sourceTransactions.map(transaction => {
     const txJson = transaction.tx_json || {};
-    const contributions = txJson.contributions || [];
+    const contributions = toArray(txJson.contributions);
     
     // Find any matching faulty filters for this transaction
     const matchingFilters = faultyTxFilters.filter(filter => 
@@ -59,12 +90,12 @@ export function transformTransactionData(rawData) {
 
     if (matchingFilters.length > 0) {
       matchingFilters.forEach(filter => {
-        const faultyContributions = filter.tx_json?.contributions || [];
+        const faultyContributions = toArray(filter.tx_json?.contributions);
         
         // Get global contributors to remove (those without specific task names)
         const globalContributorsToRemove = faultyContributions
           .filter(fc => !fc.name)
-          .flatMap(fc => fc.contributors || []);
+          .flatMap(fc => getContributorIds(fc.contributors));
 
         // Filter out faulty contributions
         processedContributions = processedContributions.filter(contribution => {
@@ -75,7 +106,7 @@ export function transformTransactionData(rawData) {
           // Combine global and specific contributors to remove
           const contributorsToRemove = [
             ...globalContributorsToRemove,
-            ...(matchingFaultyContribution?.contributors || [])
+            ...getContributorIds(matchingFaultyContribution?.contributors)
           ];
 
           // Remove faulty contributors from the contribution
@@ -112,7 +143,7 @@ export function transformTransactionData(rawData) {
   // Then proceed with the regular transformation
   return filteredData.map(transaction => {
     const txJson = transaction.tx_json || {};
-    const contributions = txJson.contributions || [];
+    const contributions = toArray(txJson.contributions);
     
     const recognitions = [];
     
