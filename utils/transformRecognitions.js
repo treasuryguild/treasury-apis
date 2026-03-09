@@ -128,6 +128,14 @@ export function transformTransactionData(rawData) {
       const taskName = name.length > 0 ? name.join(' ') : description.join(' ');
       const date = arrayMap.date?.[0] || '';
       const label = Array.isArray(arrayMap.label) ? arrayMap.label.join(' ') : (arrayMap.label || '');
+      const rawSubGroup = arrayMap.subGroup?.[0] || '';
+
+      const formattedWorkgroup = rawSubGroup
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
       
       // Generate short contribution ID
       const task_id = generateShortHash(taskName, date, label);
@@ -136,7 +144,9 @@ export function transformTransactionData(rawData) {
       Object.entries(contributors).forEach(([contributorId, amounts]) => {
         const recognition_id = generateRecognitionId({
           task_id,
-          contributor_id: contributorId
+          contributor_id: contributorId,
+          tx_hash: transaction.transaction_id,
+          workgroup: formattedWorkgroup
         });
 
         recognitions.push({
@@ -173,9 +183,12 @@ export function transformTransactionData(rawData) {
  */
 function generateRecognitionId({
   task_id,
-  contributor_id
+  contributor_id,
+  tx_hash,
+  workgroup
 }) {
-  return [task_id, contributor_id].join('-');
+  const hashSuffix = typeof tx_hash === 'string' ? tx_hash.slice(-6) : '';
+  return [task_id, contributor_id, workgroup, hashSuffix].filter(Boolean).join('-');
 }
 
 /**

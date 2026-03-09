@@ -17,6 +17,9 @@ const Nav = () => {
           <Link href="/other" className="navitems">
             Other
           </Link>
+          <Link href="/dashboard-recognitions" className="navitems">
+            Dashboard Recognitions
+          </Link>
     </nav>
   );
 };
