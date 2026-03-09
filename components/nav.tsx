@@ -20,6 +20,9 @@ const Nav = () => {
           <Link href="/dashboard-recognitions" className="navitems">
             Dashboard Recognitions
           </Link>
+          <Link href="/dashboard-cache-tester" className="navitems">
+            Cache Tester
+          </Link>
     </nav>
   );
 };
